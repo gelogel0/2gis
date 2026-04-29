@@ -69,37 +69,112 @@ lead-hunter-mvp/
     └── 001_init_schema.sql     # Supabase init
 ```
 
-## Quickstart
+## Quickstart (запуск локально)
+
+### 0. Один раз — настроить Supabase
+
+В Supabase Dashboard → SQL Editor → создать new query → запустить по очереди:
+1. `sql/001_init_schema.sql` (создаёт таблицы)
+2. `sql/002_disable_rls.sql` (отключает RLS для MVP)
+
+### 1. Клонировать и установить (Windows / macOS / Linux)
 
 ```bash
-# 1. clone & install
-git clone https://github.com/gelogel0/lead-hunter-mvp.git
+git clone https://github.com/gelogel0/2gis.git lead-hunter-mvp
 cd lead-hunter-mvp
-python -m venv .venv && source .venv/bin/activate
+
+# Создать виртуальное окружение
+python3 -m venv .venv
+
+# Активация:
+#   macOS/Linux:
+source .venv/bin/activate
+#   Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+#   Windows (CMD):
+.venv\Scripts\activate.bat
+
 pip install -r requirements.txt
 playwright install chromium
-
-# 2. env
-cp .env.example .env
-# Заполни OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY
-
-# 3. инит Supabase схемы (один раз)
-psql -h <supabase-host> -d postgres -f sql/001_init_schema.sql
-# или вставить в Supabase Dashboard → SQL Editor
-
-# 4. парсим 2GIS
-python scripts/1_scrape_2gis.py --city "Алматы" --category "салон красоты" --limit 100
-
-# 5. обогащаем инстой
-python scripts/2_enrich_instagram.py --limit 100
-
-# 6. генерим офферы (выбирает A/B/C шаблон + персонализирует)
-python scripts/3_generate_offers.py --limit 100
-
-# 7. собираем HTML страницу для отправки
-python scripts/4_build_send_page.py --output data/send_page.html
-# открыть в браузере и кликать [Send via WhatsApp Web]
 ```
+
+### 2. Заполнить .env
+
+```bash
+cp .env.example .env
+# (на Windows: copy .env.example .env)
+# Открыть .env в редакторе и заполнить:
+#   SUPABASE_URL=https://zwyzrbenpqzqjxqdcywu.supabase.co
+#   SUPABASE_ANON_KEY=sb_publishable_...
+#   SUPABASE_SERVICE_ROLE_KEY=eyJ...   ← service_role из Supabase Dashboard → API
+#   OPENAI_API_KEY=sk-proj-...
+```
+
+### 3. Health check (проверяем что всё подключено)
+
+```bash
+python scripts/health.py
+```
+
+Должно вывести:
+```
+✓ Supabase OK — таблица leads доступна
+✓ OpenAI OK — model=gpt-4o-mini, ответ='ping'
+✓ Playwright OK — example.com title='Example Domain'
+```
+
+Если что-то ✗ — исправить указанное и снова запустить health.py.
+
+### 4. Полный pipeline (~20-40 минут на 30-50 лидов)
+
+```bash
+# Phase 1: парсим 2GIS — откроется видимый Chrome (так надёжнее)
+python scripts/1_scrape_2gis.py --city "Алматы" --category "салон красоты" --limit 30
+
+# Phase 2: обогащаем Instagram (~3 сек на лид)
+python scripts/2_enrich_instagram.py --limit 30
+
+# Phase 3: GPT-4o-mini генерит персонализированные офферы (~$0.001 за лид)
+python scripts/3_generate_offers.py --limit 30
+
+# Phase 4: собираем HTML-страницу с кнопками отправки
+python scripts/4_build_send_page.py
+```
+
+### 5. Отправлять сообщения
+
+Открой `data/send_page.html` двойным кликом — откроется в браузере.
+
+Каждая строка — лид. Кнопка **📨 Send WA** открывает WhatsApp Web с уже забитым персонализированным сообщением. Тебе остаётся:
+1. Проверить, что сообщение норм
+2. Нажать Enter (отправить)
+3. Вернуться на вкладку с send_page → автоматически помечается `status=sent`
+
+Через ~50 отправок открой Supabase SQL Editor:
+```sql
+select * from public.template_stats;
+```
+— увидишь conversion rate по каждому шаблону A/B/C.
+
+### Параметры запуска
+
+| Параметр | Что делает |
+|---|---|
+| `--city "Алматы"` | город (Алматы/Астана/Шымкент) |
+| `--category "салон красоты"` | что искать в 2GIS |
+| `--limit 30` | сколько лидов парсить за один прогон |
+| `--headless True` | (только для серверов) запуск без UI; на твоей машине — НЕ используй |
+
+### Запуск разных категорий
+Просто запусти scrape несколько раз:
+
+```bash
+python scripts/1_scrape_2gis.py --city "Алматы" --category "ногтевая студия" --limit 30
+python scripts/1_scrape_2gis.py --city "Алматы" --category "косметология" --limit 30
+python scripts/1_scrape_2gis.py --city "Астана" --category "стоматология" --limit 30
+```
+
+`upsert` идемпотентен по `id` 2GIS — дубли не создадутся.
 
 ## Шаблоны outreach (A/B/C)
 

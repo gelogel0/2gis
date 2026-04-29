@@ -26,7 +26,9 @@ def main(
         help='Поисковый запрос ("салон красоты", "стоматология", "фитнес")',
     ),
     limit: int = typer.Option(50, help="Сколько лидов парсить"),
-    headless: bool = typer.Option(True, help="Headless mode (False = с GUI для отладки)"),
+    headless: bool = typer.Option(
+        False, help="True = headless (для серверов). False (default) = видимый браузер."
+    ),
 ) -> None:
     """python scripts/1_scrape_2gis.py --city Алматы --category 'салон красоты' --limit 50"""
     settings = load_settings()

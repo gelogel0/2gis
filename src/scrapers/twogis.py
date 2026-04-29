@@ -16,8 +16,9 @@ import re
 import time
 from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import quote
 
-from playwright.sync_api import Browser, Page, sync_playwright
+from playwright.sync_api import Page, sync_playwright
 
 log = logging.getLogger(__name__)
 
@@ -130,39 +131,71 @@ def search_leads(
     city: str,
     query: str,
     limit: int = 50,
-    headless: bool = True,
+    headless: bool = False,  # default видимый, чтобы лучше обходить anti-bot
 ) -> list[TwoGisLead]:
-    """Главный entry point — ищет до `limit` лидов в указанном городе по query."""
+    """Главный entry point — ищет до `limit` лидов в указанном городе по query.
+
+    Замечание про headless:
+    - В headless=True 2GIS чаще включает anti-bot (0 результатов).
+    - В headless=False (default) — твой реальный десктопный fingerprint, работает почти всегда.
+    - Если запускаешь на сервере без display — прокинь headless=True и приготовь terпение."""
     slug = _city_to_2gis_slug(city)
-    url = f"https://2gis.kz/{slug}/search/{query}"
+    # 2GIS ожидает Cyrillic URL без percent-encoding; Playwright сам кодирует.
+    url = f"https://2gis.kz/{slug}/search/{query.replace(' ', '%20')}"
 
     leads: list[TwoGisLead] = []
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=headless)
+        browser = p.chromium.launch(
+            headless=headless,
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+            ],
+        )
         context = browser.new_context(
             user_agent=(
-                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                 "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             ),
             locale="ru-RU",
+            viewport={"width": 1920, "height": 1080},
+            timezone_id="Asia/Almaty",
+        )
+        # Stealth: убираем navigator.webdriver
+        context.add_init_script(
+            "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
+            "Object.defineProperty(navigator, 'languages', "
+            "{get: () => ['ru-RU', 'ru', 'en']});"
         )
         page = context.new_page()
-        log.info("Opening %s", url)
+        log.info("Opening %s (headless=%s)", url, headless)
         page.goto(url, wait_until="domcontentloaded", timeout=60_000)
-        # 2GIS использует динамический рендер — подождём
-        try:
-            page.wait_for_selector('div[class*="_1kf6gff"], a[href*="/firm/"]',
-                                    timeout=20_000)
-        except Exception:
-            log.warning("Timeout ожидания результатов поиска — продолжаю")
 
-        # Прокручиваем для подгрузки
-        for _ in range(min(limit // 12 + 1, 5)):
+        # 2GIS — SPA, ему нужно время на гидрацию.
+        # wait_for_selector ненадёжен (компоненты пересобираются),
+        # надёжнее простой sleep и scroll loop с повторными попытками.
+        time.sleep(8)
+
+        # Прокручиваем для подгрузки. 2GIS lazy-loads.
+        scroll_iters = max(limit // 12 + 1, 3)
+        for _ in range(scroll_iters):
             page.mouse.wheel(0, 2000)
-            time.sleep(1.5)
+            time.sleep(1.8)
+
+        # Если карточек нет — даём 2GIS ещё 10 сек на load
+        cards_pre = page.query_selector_all('a[href*="/firm/"]')
+        if len(cards_pre) == 0:
+            log.warning("Карточек 0 после первого прохода — жду ещё 10s")
+            time.sleep(10)
+            for _ in range(2):
+                page.mouse.wheel(0, 2000)
+                time.sleep(1.5)
 
         # Собираем ссылки на карточки
         cards = page.query_selector_all('a[href*="/firm/"]')
+        log.info("DOM содержит %d <a> с /firm/", len(cards))
         seen_ids: set[str] = set()
         firm_links: list[str] = []
         for card in cards:
@@ -173,8 +206,11 @@ def search_leads(
             match = re.search(r"/firm/(\d+)", href)
             if match and match.group(1) not in seen_ids:
                 seen_ids.add(match.group(1))
-                firm_links.append(href if href.startswith("http")
-                                   else f"https://2gis.kz{href}")
+                # Берём чистый URL без stat= (он мешает иногда)
+                clean_path = f"/almaty/firm/{match.group(1)}".replace(
+                    "/almaty/", f"/{slug}/"
+                )
+                firm_links.append(f"https://2gis.kz{clean_path}")
             if len(firm_links) >= limit:
                 break
 
@@ -198,23 +234,33 @@ def search_leads(
 
 def _scrape_firm_page(page: Page, url: str, city: str) -> TwoGisLead | None:
     page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-    time.sleep(2)
-    # Раскрытие "Показать телефон" если есть
+    # h1 появляется не сразу
     try:
-        show_phone_btns = page.query_selector_all('button:has-text("Показать телефон"), '
-                                                    'button:has-text("телефон")')
-        for btn in show_phone_btns:
+        page.wait_for_selector("h1", timeout=15_000)
+    except Exception:
+        pass
+    time.sleep(1.5)
+
+    # Раскрытие "Показать телефон" если есть кнопки
+    try:
+        show_phone_btns = page.locator(
+            'button:has-text("Показать"), button:has-text("телефон"), '
+            'div[role="button"]:has-text("Показать")'
+        )
+        count = show_phone_btns.count()
+        for i in range(min(count, 5)):
             try:
-                btn.click(timeout=2_000)
-                time.sleep(0.4)
+                show_phone_btns.nth(i).click(timeout=2_000)
+                time.sleep(0.3)
             except Exception:
                 pass
     except Exception:
         pass
+    time.sleep(0.6)
 
     html = page.content()
-    name = (page.query_selector("h1") and
-            page.query_selector("h1").inner_text().strip()) or ""
+    name_el = page.query_selector("h1")
+    name = name_el.inner_text().strip() if name_el else ""
 
     # ID из URL
     id_match = re.search(r"/firm/(\d+)", url)
@@ -224,30 +270,53 @@ def _scrape_firm_page(page: Page, url: str, city: str) -> TwoGisLead | None:
     instagram = _extract_instagram(html)
     main_phone = _pick_best_phone(phones)
 
-    # Простые селекторы для рейтинга и отзывов (могут потребовать обновления):
+    # Рейтинг и отзывы — несколько fallback селекторов
     rating: float | None = None
     reviews_count: int | None = None
-    rating_el = page.query_selector('div[class*="rating"]')
-    if rating_el:
-        text = rating_el.inner_text()
-        m = re.search(r"(\d[.,]\d)", text)
-        if m:
+
+    # Rating: ищем число вида X.X в специфических блоках
+    for sel in ['div[class*="rating"]', 'div[class*="Rating"]',
+                'span[class*="rating"]', '[itemprop="ratingValue"]']:
+        el = page.query_selector(sel)
+        if el:
             try:
-                rating = float(m.group(1).replace(",", "."))
-            except ValueError:
-                pass
-    reviews_el = page.query_selector('a[href*="reviews"]')
-    if reviews_el:
-        text = reviews_el.inner_text()
-        m = re.search(r"(\d+)", text)
-        if m:
-            reviews_count = int(m.group(1))
+                text = el.inner_text()
+                m = re.search(r"(\d[.,]\d)", text)
+                if m:
+                    rating = float(m.group(1).replace(",", "."))
+                    break
+            except Exception:
+                continue
 
-    address_el = page.query_selector('a[href*="geo"]')
-    address = address_el.inner_text().strip() if address_el else ""
+    # Reviews count: "123 отзыва", "Отзывы (45)"
+    reviews_match = re.search(r"(\d+)\s*(отзыв)", html)
+    if reviews_match:
+        reviews_count = int(reviews_match.group(1))
 
-    category_el = page.query_selector('a[class*="rubric"]')
-    category = category_el.inner_text().strip() if category_el else ""
+    # Адрес: ищем по паттерну "ул./пр./..." или ссылку с гео
+    address = ""
+    addr_el = page.query_selector('a[href*="geo"], div[class*="address"]')
+    if addr_el:
+        address = addr_el.inner_text().strip().split("\n")[0]
+
+    # Категория из первой ссылки на rubric
+    category = ""
+    cat_el = page.query_selector('a[href*="rubric"]')
+    if cat_el:
+        category = cat_el.inner_text().strip()
+
+    # Website: ищем внешние ссылки кроме социалок
+    website = None
+    website_el = page.query_selector(
+        'a[href^="http"]:not([href*="2gis"]):not([href*="instagram"])'
+        ':not([href*="facebook"]):not([href*="vk.com"])'
+        ':not([href*="t.me"]):not([href*="wa.me"])'
+        ':not([href*="whatsapp"]):not([href*="youtube"])'
+    )
+    if website_el:
+        href = website_el.get_attribute("href") or ""
+        if href.startswith("http"):
+            website = href
 
     if not name:
         log.warning("Не удалось получить имя для %s", url)
@@ -262,6 +331,7 @@ def _scrape_firm_page(page: Page, url: str, city: str) -> TwoGisLead | None:
         main_phone=main_phone,
         all_phones=phones,
         instagram=instagram,
+        website=website,
         rating=rating,
         reviews_count=reviews_count,
         raw={"url": url},
