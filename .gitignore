@@ -1,0 +1,16 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+data/
+!data/.gitkeep
+.DS_Store
+.idea/
+.vscode/
+node_modules/
+*.log
+.pytest_cache/
+playwright-report/
+test-results/
