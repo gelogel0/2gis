@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import UnicornScene from 'unicornstudio-react';
 
-// Telegram bot credentials
-const TG_BOT_TOKEN = '8312941977:AAEpD6lp3Gy39LTEENe_sosjMZF7ogOLchY';
-const TG_CHAT_ID = '-1003773180003';
+// Lead intake endpoint — Vercel serverless function (proxies to Telegram).
+// Token + chat_id stay server-side as env vars (TG_BOT_TOKEN, TG_CHAT_ID).
+const LEAD_ENDPOINT = '/api/lead';
 
 // Контакты (примеры — заменить на реальные)
 const WA_NUMBER = '77757767666'; // +7 775 776 76 66
@@ -247,43 +247,29 @@ export default function App() {
     setSubmitting(true);
     setError(null);
     try {
-      const lines = [
-        '🔔 *Новая заявка с chsh.studio*',
-        '',
-        `👤 *Имя:* ${formData.name.trim() || '—'}`,
-        `📱 *Телефон:* ${formData.phone.trim() || '—'}`,
-        `🏢 *Бизнес:* ${formData.business.trim() || '—'}`,
-        `🎯 *Ниша:* ${formData.niche || '—'}`,
-        `⚙️ *Услуга:* ${SERVICE_OPTIONS.find((s) => s.value === formData.service)?.label || '—'}`,
-        formData.message.trim() ? `\n💬 ${formData.message.trim()}` : '',
-        '',
-        `🌐 ${document.referrer || 'direct'}`,
-      ]
-        .filter(Boolean)
-        .join('\n');
+      const serviceLabel =
+        SERVICE_OPTIONS.find((s) => s.value === formData.service)?.label || '';
+      const payload = {
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        business: formData.business.trim(),
+        niche: formData.niche,
+        service: serviceLabel,
+        message: formData.message.trim(),
+        referrer: typeof document !== 'undefined' ? document.referrer || 'direct' : 'direct',
+      };
 
-      if (TG_BOT_TOKEN && TG_CHAT_ID) {
-        const resp = await fetch(
-          `https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: TG_CHAT_ID,
-              text: lines,
-              parse_mode: 'Markdown',
-            }),
-          }
-        );
-        if (!resp.ok) {
-          const txt = await resp.text();
-          throw new Error(`Telegram ${resp.status}: ${txt}`);
-        }
-      } else {
-        // Demo mode — bot не настроен. Имитируем успех + логируем для теста.
-        console.warn('[chsh] TG bot не настроен. Заявка:', formData);
-        await new Promise((r) => setTimeout(r, 600));
+      const resp = await fetch(LEAD_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!resp.ok) {
+        const txt = await resp.text();
+        throw new Error(`Lead endpoint ${resp.status}: ${txt}`);
       }
+
       setSubmitted(true);
       setFormData(initialForm);
     } catch (err) {
