@@ -99,7 +99,62 @@ python scripts/3_generate_offers.py --limit 100
 # 7. собираем HTML страницу для отправки
 python scripts/4_build_send_page.py --output data/send_page.html
 # открыть в браузере и кликать [Send via WhatsApp Web]
+
+# или одним запуском пройти весь pipeline
+python scripts/0_run_pipeline.py --city "Алматы" --category "салон красоты"
+# dry-run (показать команды без запуска)
+python scripts/0_run_pipeline.py --dry-run
+# с таймаутом шага и продолжением при ошибках
+python scripts/0_run_pipeline.py --timeout-sec 1800 --continue-on-error
 ```
+
+## Автозапуск по расписанию (systemd)
+
+В репозитории есть шаблоны:
+- `deploy/lead-hunter.service`
+- `deploy/lead-hunter.timer`
+
+Быстрый setup на Linux/VPS:
+
+```bash
+# авто-генерация unit-файлов под текущий путь проекта + запуск timer
+./deploy/install_systemd.sh
+```
+
+Проверь и поправь в `lead-hunter.service`:
+- `WorkingDirectory`
+- путь к Python в `.venv`
+- параметры `--city`, `--category`
+
+Можно переопределить перед установкой:
+
+```bash
+CITY="Астана" CATEGORY="стоматология" ./deploy/install_systemd.sh /opt/lead-hunter lead-hunter "$USER"
+```
+
+## Деплой на Vercel + Supabase
+
+Рекомендуемая схема для MVP:
+- backend-пайплайн (scrape/enrich/generate) крутится на VPS/локально;
+- в Vercel публикуется только готовая send-page (`public/index.html`);
+- отправка `status=sent` идёт напрямую в Supabase через `SUPABASE_ANON_KEY`.
+
+Шаги:
+
+```bash
+# 1) собрать страницу отправки
+python scripts/4_build_send_page.py --output data/send_page.html
+
+# 2) подготовить статический артефакт для Vercel
+python scripts/6_prepare_vercel.py --source data/send_page.html --target public/index.html
+
+# 3) залить в git и деплоить в Vercel
+```
+
+Что важно в Supabase перед публикацией:
+- включить RLS для таблицы `leads`;
+- добавить policy, разрешающую `UPDATE status,sent_at` только для нужных строк/ролей;
+- использовать только `SUPABASE_ANON_KEY` на фронте (service role нельзя).
 
 ## Шаблоны outreach (A/B/C)
 
