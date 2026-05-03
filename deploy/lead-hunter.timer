@@ -1,0 +1,11 @@
+[Unit]
+Description=Run LeadHunter pipeline every day
+
+[Timer]
+OnCalendar=*-*-* 09:00:00
+Persistent=true
+Unit=lead-hunter.service
+
+[Install]
+WantedBy=timers.target
+

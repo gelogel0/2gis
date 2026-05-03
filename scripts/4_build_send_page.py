@@ -1,7 +1,6 @@
 """Phase 4: собираем HTML send-page (один файл, открывается в браузере)."""
 from __future__ import annotations
 
-import json
 import logging
 import sys
 from pathlib import Path
@@ -12,6 +11,7 @@ import typer
 
 from src.config import DATA_DIR, load_settings, setup_logging
 from src.db import fetch_leads_by_status, get_client
+from src.ui.send_page import row_html
 
 log = logging.getLogger(__name__)
 app = typer.Typer(add_completion=False)
@@ -151,39 +151,25 @@ async function markSent(leadId, btn) {{
     console.error(e);
   }}
 }}
+
+document.addEventListener("click", (event) => {{
+  const sendBtn = event.target.closest(".js-send-btn");
+  if (sendBtn) {{
+    const leadId = sendBtn.dataset.leadId || "";
+    setTimeout(() => markSent(leadId, sendBtn), 200);
+    return;
+  }}
+
+  const markBtn = event.target.closest(".js-mark-btn");
+  if (markBtn) {{
+    const leadId = markBtn.dataset.leadId || "";
+    markSent(leadId, markBtn);
+  }}
+}});
 </script>
 </body>
 </html>
 """
-
-
-def _row_html(idx: int, lead: dict) -> str:
-    template = lead.get("template_id") or "?"
-    offer = (lead.get("generated_offer") or "").replace("<", "&lt;").replace(">", "&gt;")
-    wa_link = lead.get("wa_link") or ""
-    name = (lead.get("name") or "").replace("<", "&lt;")
-    category = (lead.get("category") or "").replace("<", "&lt;")
-    city = lead.get("city") or ""
-    lead_id = lead.get("id") or ""
-
-    send_btn = (
-        f'<a class="send-btn" href="{wa_link}" target="_blank" '
-        f'onclick="setTimeout(() => markSent({json.dumps(lead_id)}, this), 200)">📨 Send WA</a>'
-        if wa_link
-        else '<span class="tag">no phone</span>'
-    )
-
-    return f"""
-<tr class="template-{template}" data-id="{lead_id}">
-  <td>{idx}</td>
-  <td><strong>{name}</strong><br><span class="tag">{lead.get("main_phone","-")}</span></td>
-  <td>{category}</td>
-  <td>{city}</td>
-  <td><span class="tag">{template}</span></td>
-  <td><div class="offer-text">{offer}</div></td>
-  <td>{send_btn}<button class="mark-btn" onclick="markSent({json.dumps(lead_id)}, this)">mark sent</button></td>
-</tr>
-""".strip()
 
 
 @app.command()
@@ -204,7 +190,7 @@ def main(
         log.warning("Нет лидов для отправки. Запусти сначала 3_generate_offers.py")
         raise typer.Exit(code=1)
 
-    rows_html = "\n".join(_row_html(i, lead) for i, lead in enumerate(leads, 1))
+    rows_html = "\n".join(row_html(i, lead) for i, lead in enumerate(leads, 1))
 
     html = (
         HTML_TEMPLATE
