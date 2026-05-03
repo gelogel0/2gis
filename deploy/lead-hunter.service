@@ -1,0 +1,15 @@
+[Unit]
+Description=LeadHunter pipeline runner
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/lead-hunter
+EnvironmentFile=/opt/lead-hunter/.env
+ExecStart=/opt/lead-hunter/.venv/bin/python scripts/0_run_pipeline.py --city "Алматы" --category "салон красоты" --timeout-sec 3600
+StandardOutput=append:/opt/lead-hunter/data/pipeline.log
+StandardError=append:/opt/lead-hunter/data/pipeline.log
+
+[Install]
+WantedBy=multi-user.target
+
