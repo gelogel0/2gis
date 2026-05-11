@@ -27,6 +27,8 @@ class SendPageHtmlTests(unittest.TestCase):
         self.assertIn("?text=&quot;x&quot;&amp;a=&lt;b&gt;", row)
         self.assertNotIn("<script>x</script>", row)
         self.assertIn('class="send-btn js-send-btn"', row)
+        self.assertIn('class="copy-btn js-copy-btn"', row)
+        self.assertIn('aria-label="Copy offer text"', row)
         self.assertIn('class="mark-btn js-mark-btn"', row)
         self.assertNotIn("markSent(", row)
 

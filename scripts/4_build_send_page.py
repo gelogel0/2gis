@@ -48,6 +48,11 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.copy-btn {
+  margin-left: 4px; padding: 6px 10px; background: #2a313b; color: #94a3b8;
+  border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
+}
+.copy-btn:hover { background: #3a414b; color: #e6e8eb; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
@@ -152,7 +157,7 @@ async function markSent(leadId, btn) {{
   }}
 }}
 
-document.addEventListener("click", (event) => {{
+document.addEventListener("click", async (event) => {{
   const sendBtn = event.target.closest(".js-send-btn");
   if (sendBtn) {{
     const leadId = sendBtn.dataset.leadId || "";
@@ -164,6 +169,27 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    const row = copyBtn.closest("tr");
+    const text = row.querySelector(".offer-text").textContent;
+    try {{
+      await navigator.clipboard.writeText(text);
+      const oldTxt = copyBtn.textContent;
+      copyBtn.textContent = "Copied!";
+      copyBtn.style.background = "#4ade80";
+      copyBtn.style.color = "#0e1116";
+      setTimeout(() => {{
+        copyBtn.textContent = oldTxt;
+        copyBtn.style.background = "";
+        copyBtn.style.color = "";
+      }}, 1500);
+    }} catch (err) {{
+      console.error("Failed to copy:", err);
+    }}
   }}
 }});
 </script>
