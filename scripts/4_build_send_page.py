@@ -43,11 +43,12 @@ tr:last-child td { border-bottom: none; }
   white-space: nowrap;
 }
 .send-btn:hover { background: #1ebe5b; }
-.mark-btn {
-  margin-left: 6px; padding: 6px 10px; background: #2a313b; color: #94a3b8;
+.mark-btn, .copy-btn {
+  padding: 6px 10px; background: #2a313b; color: #94a3b8;
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
-.mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.mark-btn:hover, .copy-btn:hover { background: #3a414b; color: #e6e8eb; }
+.mark-btn:disabled { opacity: 0.5; cursor: default; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
@@ -57,6 +58,12 @@ input[type="text"], input[type="search"] {
   border-radius: 6px; width: 300px;
 }
 .filter-row { margin-bottom: 16px; display: flex; gap: 8px; align-items: center; }
+
+/* Focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid #4ade80;
+  outline-offset: 2px;
+}
 </style>
 </head>
 <body>
@@ -71,7 +78,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()" aria-label="Поиск лидов по имени или категории">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -152,6 +159,17 @@ async function markSent(leadId, btn) {{
   }}
 }}
 
+async function copyToClipboard(text, btn) {{
+  try {{
+    await navigator.clipboard.writeText(text);
+    const originalText = btn.textContent;
+    btn.textContent = "✓";
+    setTimeout(() => {{ btn.textContent = originalText; }}, 2000);
+  }} catch (err) {{
+    console.error('Failed to copy: ', err);
+  }}
+}}
+
 document.addEventListener("click", (event) => {{
   const sendBtn = event.target.closest(".js-send-btn");
   if (sendBtn) {{
@@ -164,6 +182,14 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    const targetId = copyBtn.dataset.target;
+    const text = document.getElementById(targetId).textContent;
+    copyToClipboard(text, copyBtn);
   }}
 }});
 </script>
