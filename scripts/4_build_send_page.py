@@ -34,9 +34,11 @@ table { width: 100%; border-collapse: collapse; background: #1a1f29; border-radi
 th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #2a313b; vertical-align: top; }
 th { background: #232a36; font-size: 12px; text-transform: uppercase; color: #94a3b8; }
 tr:last-child td { border-bottom: none; }
+tr:hover { background: rgba(255,255,255,0.02); }
 .template-A { background: rgba(74,222,128,0.1); }
 .template-B { background: rgba(96,165,250,0.1); }
 .template-C { background: rgba(251,191,36,0.1); }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 .send-btn {
   display: inline-block; padding: 8px 14px; background: #25D366; color: #0e1116;
   text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
@@ -50,6 +52,15 @@ tr:last-child td { border-bottom: none; }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.copy-btn {
+  position: absolute; top: 4px; right: 4px; padding: 4px;
+  background: #2a313b; border: none; border-radius: 4px;
+  cursor: pointer; opacity: 0; transition: opacity 0.2s;
+  font-size: 12px;
+}
+.offer-container:hover .copy-btn, .copy-btn:focus { opacity: 1; }
+.copy-btn:hover { background: #3a414b; }
+.copy-btn:active { transform: scale(0.95); }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -71,7 +82,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()" aria-label="Search leads by name or category">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -109,6 +120,17 @@ function updateStats() {{
   document.getElementById("stat-C").textContent = C;
 }}
 updateStats();
+
+async function copyToClipboard(text, btn) {{
+  try {{
+    await navigator.clipboard.writeText(text);
+    const originalText = btn.textContent;
+    btn.textContent = "✅";
+    setTimeout(() => {{ btn.textContent = originalText; }}, 1500);
+  }} catch (err) {{
+    console.error("Failed to copy: ", err);
+  }}
+}}
 
 function applyFilter() {{
   const q = (document.getElementById("search").value || "").toLowerCase();
@@ -153,6 +175,13 @@ async function markSent(leadId, btn) {{
 }}
 
 document.addEventListener("click", (event) => {{
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    const text = copyBtn.previousElementSibling.textContent;
+    copyToClipboard(text, copyBtn);
+    return;
+  }}
+
   const sendBtn = event.target.closest(".js-send-btn");
   if (sendBtn) {{
     const leadId = sendBtn.dataset.leadId || "";
