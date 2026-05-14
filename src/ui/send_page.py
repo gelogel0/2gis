@@ -47,6 +47,7 @@ def row_html(idx: int, lead: dict) -> str:
 
     send_btn = (
         f'<a class="send-btn js-send-btn" href="{wa_link}" target="_blank" '
+        f'rel="noopener noreferrer" title="Open WhatsApp chat with {name}" '
         f'data-lead-id="{lead_id_attr}">📨 Send WA</a>'
         if wa_link
         else '<span class="tag">no phone</span>'
@@ -60,6 +61,9 @@ def row_html(idx: int, lead: dict) -> str:
   <td>{city}</td>
   <td><span class="tag">{template}</span></td>
   <td><div class="offer-text">{offer}</div></td>
-  <td>{send_btn}<button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}">mark sent</button></td>
+  <td>
+    {send_btn}
+    <button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}" title="Mark this lead as sent without opening WhatsApp">mark sent</button>
+  </td>
 </tr>
 """.strip()
