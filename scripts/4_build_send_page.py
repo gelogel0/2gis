@@ -30,10 +30,12 @@ h1 { font-size: 22px; margin: 0 0 16px; }
 .stats { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
 .stat { background: #1a1f29; padding: 10px 14px; border-radius: 8px; font-size: 13px; }
 .stat strong { color: #4ade80; font-size: 18px; display: block; }
-table { width: 100%; border-collapse: collapse; background: #1a1f29; border-radius: 8px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; background: #1a1f29; border-radius: 8px; }
 th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #2a313b; vertical-align: top; }
-th { background: #232a36; font-size: 12px; text-transform: uppercase; color: #94a3b8; }
+th { background: #232a36; font-size: 12px; text-transform: uppercase; color: #94a3b8; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 #2a313b; }
 tr:last-child td { border-bottom: none; }
+tr { transition: background-color 0.2s ease; }
+tr:hover { background-color: rgba(255,255,255,0.03); }
 .template-A { background: rgba(74,222,128,0.1); }
 .template-B { background: rgba(96,165,250,0.1); }
 .template-C { background: rgba(251,191,36,0.1); }
@@ -41,13 +43,18 @@ tr:last-child td { border-bottom: none; }
   display: inline-block; padding: 8px 14px; background: #25D366; color: #0e1116;
   text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
   white-space: nowrap;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 .send-btn:hover { background: #1ebe5b; }
+.send-btn:active { transform: scale(0.98); }
+.send-btn:focus-visible, .mark-btn:focus-visible, input:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 .mark-btn {
   margin-left: 6px; padding: 6px 10px; background: #2a313b; color: #94a3b8;
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.mark-btn:active { transform: scale(0.98); }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
@@ -71,7 +78,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()" aria-label="Поиск по имени или категории">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -198,6 +205,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
