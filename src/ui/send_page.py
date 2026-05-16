@@ -47,7 +47,7 @@ def row_html(idx: int, lead: dict) -> str:
 
     send_btn = (
         f'<a class="send-btn js-send-btn" href="{wa_link}" target="_blank" '
-        f'data-lead-id="{lead_id_attr}">📨 Send WA</a>'
+        f'rel="noopener noreferrer" data-lead-id="{lead_id_attr}">📨 Send WA</a>'
         if wa_link
         else '<span class="tag">no phone</span>'
     )
@@ -59,7 +59,13 @@ def row_html(idx: int, lead: dict) -> str:
   <td>{category}</td>
   <td>{city}</td>
   <td><span class="tag">{template}</span></td>
-  <td><div class="offer-text">{offer}</div></td>
-  <td>{send_btn}<button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}">mark sent</button></td>
+  <td><div class="offer-text" id="offer-{lead_id_attr}">{offer}</div></td>
+  <td>
+    <div style="display: flex; gap: 4px; align-items: center;">
+      {send_btn}
+      <button class="mark-btn js-copy-btn" data-lead-id="{lead_id_attr}" aria-label="Copy offer text">📋</button>
+      <button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}">mark sent</button>
+    </div>
+  </td>
 </tr>
 """.strip()
