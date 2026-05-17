@@ -36,9 +36,9 @@ def safe_wa_link(link: object) -> str:
 
 def row_html(idx: int, lead: dict) -> str:
     template = safe_template_id(lead.get("template_id"))
-    offer = escape(lead.get("generated_offer") or "")
+    offer = escape(lead.get("generated_offer") or "", quote=True)
     wa_link = safe_wa_link(lead.get("wa_link"))
-    name = escape(lead.get("name") or "")
+    name = escape(lead.get("name") or "", quote=True)
     category = escape(lead.get("category") or "")
     city = escape(lead.get("city") or "")
     lead_id = str(lead.get("id") or "")
@@ -47,6 +47,7 @@ def row_html(idx: int, lead: dict) -> str:
 
     send_btn = (
         f'<a class="send-btn js-send-btn" href="{wa_link}" target="_blank" '
+        f'rel="noopener noreferrer" aria-label="Send WhatsApp message to {name}" '
         f'data-lead-id="{lead_id_attr}">📨 Send WA</a>'
         if wa_link
         else '<span class="tag">no phone</span>'
@@ -59,7 +60,12 @@ def row_html(idx: int, lead: dict) -> str:
   <td>{category}</td>
   <td>{city}</td>
   <td><span class="tag">{template}</span></td>
-  <td><div class="offer-text">{offer}</div></td>
-  <td>{send_btn}<button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}">mark sent</button></td>
+  <td>
+    <div class="offer-container">
+      <div class="offer-text">{offer}</div>
+      <button class="copy-btn js-copy-btn" aria-label="Copy offer text" data-text="{offer}">📋</button>
+    </div>
+  </td>
+  <td>{send_btn}<button class="mark-btn js-mark-btn" aria-label="Mark as sent" data-lead-id="{lead_id_attr}">mark sent</button></td>
 </tr>
 """.strip()
