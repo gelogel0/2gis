@@ -36,7 +36,8 @@ def safe_wa_link(link: object) -> str:
 
 def row_html(idx: int, lead: dict) -> str:
     template = safe_template_id(lead.get("template_id"))
-    offer = escape(lead.get("generated_offer") or "")
+    offer_raw = lead.get("generated_offer") or ""
+    offer, offer_attr = escape(offer_raw), escape(offer_raw, quote=True)
     wa_link = safe_wa_link(lead.get("wa_link"))
     name = escape(lead.get("name") or "")
     category = escape(lead.get("category") or "")
@@ -47,7 +48,7 @@ def row_html(idx: int, lead: dict) -> str:
 
     send_btn = (
         f'<a class="send-btn js-send-btn" href="{wa_link}" target="_blank" '
-        f'data-lead-id="{lead_id_attr}">📨 Send WA</a>'
+        f'rel="noopener noreferrer" data-lead-id="{lead_id_attr}">📨 Send WA</a>'
         if wa_link
         else '<span class="tag">no phone</span>'
     )
@@ -59,7 +60,10 @@ def row_html(idx: int, lead: dict) -> str:
   <td>{category}</td>
   <td>{city}</td>
   <td><span class="tag">{template}</span></td>
-  <td><div class="offer-text">{offer}</div></td>
+  <td><div style="display:flex;gap:4px;align-items:flex-start">
+    <div class="offer-text">{offer}</div>
+    <button class="copy-btn js-copy-btn" data-text="{offer_attr}" aria-label="Copy offer">📋</button>
+  </div></td>
   <td>{send_btn}<button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}">mark sent</button></td>
 </tr>
 """.strip()
