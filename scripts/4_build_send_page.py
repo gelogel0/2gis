@@ -48,6 +48,13 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.copy-btn {
+  position: absolute; top: 4px; right: 4px; padding: 4px 6px;
+  background: rgba(42,49,59,0.8); border: none; border-radius: 4px;
+  cursor: pointer; font-size: 12px; transition: all 0.2s;
+}
+.copy-btn:hover { background: #3a414b; }
+.copy-btn:focus-visible { outline: 2px solid #4ade80; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
@@ -71,7 +78,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." aria-label="Поиск лидов" oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -164,6 +171,22 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    const targetId = copyBtn.dataset.target;
+    const text = document.getElementById(targetId).textContent;
+    navigator.clipboard.writeText(text).then(() => {{
+      const originalIcon = copyBtn.textContent;
+      const originalLabel = copyBtn.getAttribute("aria-label");
+      copyBtn.textContent = "✅";
+      copyBtn.setAttribute("aria-label", "Скопировано!");
+      setTimeout(() => {{
+        copyBtn.textContent = originalIcon;
+        copyBtn.setAttribute("aria-label", originalLabel);
+      }}, 2000);
+    }});
   }}
 }});
 </script>
