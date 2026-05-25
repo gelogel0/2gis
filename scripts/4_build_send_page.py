@@ -50,6 +50,13 @@ tr:last-child td { border-bottom: none; }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.offer-wrapper { position: relative; display: inline-block; }
+.copy-btn {
+  position: absolute; top: 4px; right: 4px; background: #2a313b; border: none;
+  border-radius: 4px; cursor: pointer; padding: 4px; font-size: 12px; opacity: 0; transition: opacity 0.2s;
+}
+.offer-wrapper:hover .copy-btn, .copy-btn:focus-visible { opacity: 1; }
+.copy-btn:hover { background: #3a414b; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -164,6 +171,22 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    const text = copyBtn.dataset.copy;
+    navigator.clipboard.writeText(text).then(() => {{
+      const originalText = copyBtn.textContent;
+      const originalLabel = copyBtn.getAttribute("aria-label");
+      copyBtn.textContent = "✅";
+      copyBtn.setAttribute("aria-label", "Скопировано!");
+      setTimeout(() => {{
+        copyBtn.textContent = originalText;
+        copyBtn.setAttribute("aria-label", originalLabel);
+      }}, 2000);
+    }});
   }}
 }});
 </script>
