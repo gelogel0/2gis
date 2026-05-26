@@ -46,7 +46,7 @@ def row_html(idx: int, lead: dict) -> str:
     phone = escape(lead.get("main_phone", "-") or "-")
 
     send_btn = (
-        f'<a class="send-btn js-send-btn" href="{wa_link}" target="_blank" '
+        f'<a class="send-btn js-send-btn" href="{wa_link}" target="_blank" rel="noopener noreferrer" '
         f'data-lead-id="{lead_id_attr}">📨 Send WA</a>'
         if wa_link
         else '<span class="tag">no phone</span>'
