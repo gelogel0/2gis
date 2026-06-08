@@ -48,8 +48,17 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.offer-wrapper { display: flex; align-items: flex-start; gap: 8px; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
-              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; flex-grow: 1; }
+.copy-btn {
+  background: #2a313b; border: none; border-radius: 6px; cursor: pointer;
+  padding: 6px; font-size: 16px; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.copy-btn:hover { background: #3a414b; transform: scale(1.05); }
+.copy-btn:active { transform: scale(0.95); }
+.copy-success { background: #4ade80 !important; color: #0e1116; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -96,76 +105,93 @@ input[type="text"], input[type="search"] {
 const SUPABASE_URL = "{supabase_url}";
 const SUPABASE_ANON_KEY = "{supabase_anon_key}";
 
-function updateStats() {{
+function updateStats() {
   const rows = document.querySelectorAll("tbody tr");
   let A=0, B=0, C=0;
-  rows.forEach(r => {{
+  rows.forEach(r => {
     if (r.classList.contains("template-A")) A++;
     else if (r.classList.contains("template-B")) B++;
     else if (r.classList.contains("template-C")) C++;
-  }});
+  });
   document.getElementById("stat-A").textContent = A;
   document.getElementById("stat-B").textContent = B;
   document.getElementById("stat-C").textContent = C;
-}}
+}
 updateStats();
 
-function applyFilter() {{
+function applyFilter() {
   const q = (document.getElementById("search").value || "").toLowerCase();
   const hideSent = document.getElementById("filter-hide-sent").checked;
   const rows = document.querySelectorAll("tbody tr");
-  rows.forEach(r => {{
+  rows.forEach(r => {
     const txt = r.textContent.toLowerCase();
     const isSent = r.classList.contains("row-sent");
     let visible = txt.includes(q);
     if (hideSent && isSent) visible = false;
     r.style.display = visible ? "" : "none";
-  }});
-}}
+  });
+}
 
-async function markSent(leadId, btn) {{
+async function markSent(leadId, btn) {
   const row = btn.closest("tr");
   row.classList.add("row-sent");
   const sentCounter = document.getElementById("stat-sent");
   sentCounter.textContent = parseInt(sentCounter.textContent || 0) + 1;
   // PATCH в Supabase через REST API (anon key + RLS policy должна разрешать)
-  try {{
-    const resp = await fetch(`${{SUPABASE_URL}}/rest/v1/leads?id=eq.${{encodeURIComponent(leadId)}}`, {{
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/leads?id=eq.${encodeURIComponent(leadId)}`, {
       method: "PATCH",
-      headers: {{
+      headers: {
         "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${{SUPABASE_ANON_KEY}}`,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
         "Content-Type": "application/json",
         "Prefer": "return=minimal"
-      }},
-      body: JSON.stringify({{ status: "sent", sent_at: new Date().toISOString() }})
-    }});
-    if (!resp.ok) {{
+      },
+      body: JSON.stringify({ status: "sent", sent_at: new Date().toISOString() })
+    });
+    if (!resp.ok) {
       console.error("Failed to mark sent:", await resp.text());
       btn.textContent = "⚠ Re-mark";
-    }} else {{
+    } else {
       btn.textContent = "✓ sent";
       btn.disabled = true;
-    }}
-  }} catch (e) {{
+    }
+  } catch (e) {
     console.error(e);
-  }}
-}}
+  }
+}
 
-document.addEventListener("click", (event) => {{
+document.addEventListener("click", (event) => {
   const sendBtn = event.target.closest(".js-send-btn");
-  if (sendBtn) {{
+  if (sendBtn) {
     const leadId = sendBtn.dataset.leadId || "";
     setTimeout(() => markSent(leadId, sendBtn), 200);
     return;
-  }}
+  }
 
   const markBtn = event.target.closest(".js-mark-btn");
-  if (markBtn) {{
+  if (markBtn) {
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
-  }}
-}});
+  }
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {
+    const text = copyBtn.dataset.offer;
+    navigator.clipboard.writeText(text).then(() => {
+      const oldIcon = copyBtn.textContent;
+      const oldAria = copyBtn.getAttribute("aria-label");
+      copyBtn.textContent = "✅";
+      copyBtn.classList.add("copy-success");
+      copyBtn.setAttribute("aria-label", "Скопировано!");
+      setTimeout(() => {
+        copyBtn.textContent = oldIcon;
+        copyBtn.classList.remove("copy-success");
+        copyBtn.setAttribute("aria-label", oldAria);
+      }, 2000);
+    });
+  }
+});
 </script>
 </body>
 </html>
