@@ -52,9 +52,14 @@ tr:last-child td { border-bottom: none; }
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
+.copy-success { color: #4ade80 !important; }
+.offer-wrapper { display: flex; gap: 4px; align-items: flex-start; }
 input[type="text"], input[type="search"] {
   padding: 8px 12px; background: #1a1f29; border: 1px solid #2a313b; color: #e6e8eb;
   border-radius: 6px; width: 300px;
+}
+input:focus-visible, button:focus-visible, .send-btn:focus-visible {
+  outline: 2px solid #4ade80; outline-offset: 2px;
 }
 .filter-row { margin-bottom: 16px; display: flex; gap: 8px; align-items: center; }
 </style>
@@ -71,7 +76,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()" aria-label="Поиск лидов">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -96,76 +101,95 @@ input[type="text"], input[type="search"] {
 const SUPABASE_URL = "{supabase_url}";
 const SUPABASE_ANON_KEY = "{supabase_anon_key}";
 
-function updateStats() {{
+function updateStats() {
   const rows = document.querySelectorAll("tbody tr");
   let A=0, B=0, C=0;
-  rows.forEach(r => {{
+  rows.forEach(r => {
     if (r.classList.contains("template-A")) A++;
     else if (r.classList.contains("template-B")) B++;
     else if (r.classList.contains("template-C")) C++;
-  }});
+  });
   document.getElementById("stat-A").textContent = A;
   document.getElementById("stat-B").textContent = B;
   document.getElementById("stat-C").textContent = C;
-}}
+}
 updateStats();
 
-function applyFilter() {{
+function applyFilter() {
   const q = (document.getElementById("search").value || "").toLowerCase();
   const hideSent = document.getElementById("filter-hide-sent").checked;
   const rows = document.querySelectorAll("tbody tr");
-  rows.forEach(r => {{
+  rows.forEach(r => {
     const txt = r.textContent.toLowerCase();
     const isSent = r.classList.contains("row-sent");
     let visible = txt.includes(q);
     if (hideSent && isSent) visible = false;
     r.style.display = visible ? "" : "none";
-  }});
-}}
+  });
+}
 
-async function markSent(leadId, btn) {{
+async function markSent(leadId, btn) {
   const row = btn.closest("tr");
   row.classList.add("row-sent");
   const sentCounter = document.getElementById("stat-sent");
   sentCounter.textContent = parseInt(sentCounter.textContent || 0) + 1;
   // PATCH в Supabase через REST API (anon key + RLS policy должна разрешать)
-  try {{
-    const resp = await fetch(`${{SUPABASE_URL}}/rest/v1/leads?id=eq.${{encodeURIComponent(leadId)}}`, {{
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/leads?id=eq.${encodeURIComponent(leadId)}`, {
       method: "PATCH",
-      headers: {{
+      headers: {
         "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${{SUPABASE_ANON_KEY}}`,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
         "Content-Type": "application/json",
         "Prefer": "return=minimal"
-      }},
-      body: JSON.stringify({{ status: "sent", sent_at: new Date().toISOString() }})
-    }});
-    if (!resp.ok) {{
+      },
+      body: JSON.stringify({ status: "sent", sent_at: new Date().toISOString() })
+    });
+    if (!resp.ok) {
       console.error("Failed to mark sent:", await resp.text());
       btn.textContent = "⚠ Re-mark";
-    }} else {{
+    } else {
       btn.textContent = "✓ sent";
       btn.disabled = true;
-    }}
-  }} catch (e) {{
+    }
+  } catch (e) {
     console.error(e);
-  }}
-}}
+  }
+}
 
-document.addEventListener("click", (event) => {{
+document.addEventListener("click", (event) => {
   const sendBtn = event.target.closest(".js-send-btn");
-  if (sendBtn) {{
+  if (sendBtn) {
     const leadId = sendBtn.dataset.leadId || "";
     setTimeout(() => markSent(leadId, sendBtn), 200);
     return;
-  }}
+  }
 
   const markBtn = event.target.closest(".js-mark-btn");
-  if (markBtn) {{
+  if (markBtn) {
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
-  }}
-}});
+    return;
+  }
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {
+    const text = copyBtn.dataset.offer;
+    navigator.clipboard.writeText(text).then(() => {
+      const originalText = copyBtn.textContent;
+      const originalAria = copyBtn.getAttribute("aria-label");
+      copyBtn.textContent = "✅";
+      copyBtn.classList.add("copy-success");
+      copyBtn.setAttribute("aria-label", "✓ Скопировано!");
+      setTimeout(() => {
+        copyBtn.textContent = originalText;
+        copyBtn.classList.remove("copy-success");
+        copyBtn.setAttribute("aria-label", originalAria);
+      }, 2000);
+    });
+    return;
+  }
+});
 </script>
 </body>
 </html>
