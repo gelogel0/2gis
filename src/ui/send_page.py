@@ -36,7 +36,9 @@ def safe_wa_link(link: object) -> str:
 
 def row_html(idx: int, lead: dict) -> str:
     template = safe_template_id(lead.get("template_id"))
-    offer = escape(lead.get("generated_offer") or "")
+    offer_raw = lead.get("generated_offer") or ""
+    offer_escaped = escape(offer_raw)
+    offer_attr = escape(offer_raw, quote=True)
     wa_link = safe_wa_link(lead.get("wa_link"))
     name = escape(lead.get("name") or "")
     category = escape(lead.get("category") or "")
@@ -59,7 +61,12 @@ def row_html(idx: int, lead: dict) -> str:
   <td>{category}</td>
   <td>{city}</td>
   <td><span class="tag">{template}</span></td>
-  <td><div class="offer-text">{offer}</div></td>
+  <td>
+    <div class="offer-wrapper">
+      <div class="offer-text">{offer_escaped}</div>
+      <button class="copy-btn js-copy-btn" data-offer="{offer_attr}" aria-label="Копировать оффер">📋</button>
+    </div>
+  </td>
   <td>{send_btn}<button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}">mark sent</button></td>
 </tr>
 """.strip()

@@ -1,0 +1,3 @@
+## 2025-05-14 - Copy Offer UX and Accessibility
+**Learning:** In a B2B lead generation tool, the ability to quickly copy the generated outreach text is a critical micro-UX that bridges the gap between the tool and the communication platform (WhatsApp). Additionally, when using Python to generate HTML/JS, it's vital to check if `.replace()` or `.format()` is used, as doubled braces in JS can lead to silent syntax errors if the template is not handled correctly.
+**Action:** Always provide immediate visual and ARIA feedback (e.g., changing icon to ✓ and updating aria-label) for "Copy to Clipboard" actions. Ensure high-contrast `:focus-visible` indicators are present for keyboard accessibility in dark themes.
