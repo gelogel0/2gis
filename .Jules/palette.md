@@ -1,0 +1,3 @@
+## 2025-01-24 - [Micro-UX: Copy to Clipboard & Accessibility]
+**Learning:** The outreach queue's HTML generation in `scripts/4_build_send_page.py` uses a Python raw string with `.replace()` for variable substitution. This requires single curly braces for JavaScript logic to remain valid in the output. Additionally, providing immediate visual feedback (icon change) and ARIA live updates significantly improves the perceived speed and accessibility of "Copy to Clipboard" actions.
+**Action:** When adding interactive elements to the send page, use global event delegation in the main script and ensure ARIA labels are updated to reflect temporary states like "Copied!".
