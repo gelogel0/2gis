@@ -1,0 +1,3 @@
+## 2025-05-22 - [Consistency in Localization and Template Braces]
+**Learning:** In a multilingual app, mixed UI languages (Russian/English) can feel disjointed. Always match the primary language of the surrounding elements (e.g., 'Скопировать оффер' instead of 'Copy offer'). Also, when generating HTML in Python using `.replace()` instead of `.format()`, literal curly braces in JS/CSS must remain single `{ }`; doubling them to `{{ }}` is only for `.format()` and will cause JS syntax errors.
+**Action:** Default to the app's primary language for all new interactive elements. Always verify the Python string substitution method before deciding on brace escaping.
