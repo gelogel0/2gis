@@ -1,0 +1,3 @@
+## 2025-05-14 - [Copy Offer Utility & Accessibility]
+**Learning:** For asynchronous utility actions like "Copy to Clipboard", providing immediate visual feedback (changing icons) and accessibility feedback (ARIA label updates) significantly improves the perceived responsiveness of the UI. Additionally, when disabling interactions for "processed" items, using `pointer-events: none` on specific state-changing buttons while leaving utility buttons active ensures the tool remains useful without being error-prone.
+**Action:** Use the `offer-wrapper` flex pattern for aligning utility buttons with multi-line text and always include temporary visual/ARIA success states for background interactions.
