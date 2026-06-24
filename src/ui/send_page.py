@@ -52,14 +52,30 @@ def row_html(idx: int, lead: dict) -> str:
         else '<span class="tag">no phone</span>'
     )
 
+    offer_attr = escape(lead.get("generated_offer") or "", quote=True)
+    status = lead.get("status", "")
+    row_class = f"template-{template}"
+    if status == "sent":
+        row_class += " row-sent"
+
     return f"""
-<tr class="template-{template}" data-id="{lead_id_attr}">
+<tr class="{row_class}" data-id="{lead_id_attr}">
   <td>{idx}</td>
   <td><strong>{name}</strong><br><span class="tag">{phone}</span></td>
   <td>{category}</td>
   <td>{city}</td>
   <td><span class="tag">{template}</span></td>
-  <td><div class="offer-text">{offer}</div></td>
-  <td>{send_btn}<button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}">mark sent</button></td>
+  <td>
+    <div class="offer-wrapper">
+      <div class="offer-text">{offer}</div>
+      <button class="mark-btn js-copy-btn" data-offer="{offer_attr}" aria-label="Copy offer">📋</button>
+    </div>
+  </td>
+  <td>
+    {send_btn}
+    <button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}" {"disabled" if status == "sent" else ""}>
+      {"✓ sent" if status == "sent" else "mark sent"}
+    </button>
+  </td>
 </tr>
 """.strip()
