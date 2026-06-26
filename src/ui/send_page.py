@@ -59,7 +59,12 @@ def row_html(idx: int, lead: dict) -> str:
   <td>{category}</td>
   <td>{city}</td>
   <td><span class="tag">{template}</span></td>
-  <td><div class="offer-text">{offer}</div></td>
+  <td>
+    <div class="offer-wrapper">
+      <div class="offer-text">{offer}</div>
+      <button class="mark-btn js-copy-btn" data-offer="{offer}" aria-label="Copy offer">📋</button>
+    </div>
+  </td>
   <td>{send_btn}<button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}">mark sent</button></td>
 </tr>
 """.strip()

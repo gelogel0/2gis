@@ -52,6 +52,10 @@ tr:last-child td { border-bottom: none; }
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
+.row-sent .mark-btn, .row-sent .send-btn { pointer-events: none; }
+.offer-wrapper { display: flex; align-items: flex-start; gap: 4px; }
+.copy-success { color: #4ade80 !important; }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 input[type="text"], input[type="search"] {
   padding: 8px 12px; background: #1a1f29; border: 1px solid #2a313b; color: #e6e8eb;
   border-radius: 6px; width: 300px;
@@ -71,7 +75,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" aria-label="Поиск по имени или категории" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -142,17 +146,35 @@ async function markSent(leadId, btn) {{
     }});
     if (!resp.ok) {{
       console.error("Failed to mark sent:", await resp.text());
-      btn.textContent = "⚠ Re-mark";
+      btn.textContent = "⚠ Error";
     }} else {{
       btn.textContent = "✓ sent";
       btn.disabled = true;
     }}
   }} catch (e) {{
     console.error(e);
+    btn.textContent = "⚠ Error";
   }}
 }}
 
 document.addEventListener("click", (event) => {{
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    const text = copyBtn.dataset.offer;
+    navigator.clipboard.writeText(text).then(() => {{
+      const original = copyBtn.textContent;
+      copyBtn.textContent = "✅";
+      copyBtn.classList.add("copy-success");
+      copyBtn.setAttribute("aria-label", "Copied!");
+      setTimeout(() => {{
+        copyBtn.textContent = original;
+        copyBtn.classList.remove("copy-success");
+        copyBtn.setAttribute("aria-label", "Copy offer");
+      }}, 2000);
+    }}).catch(err => console.error("Clipboard error", err));
+    return;
+  }}
+
   const sendBtn = event.target.closest(".js-send-btn");
   if (sendBtn) {{
     const leadId = sendBtn.dataset.leadId || "";

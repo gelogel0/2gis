@@ -1,0 +1,3 @@
+## 2025-05-15 - Enhanced Offer Interaction and Accessibility
+**Learning:** Providing immediate visual feedback for background actions (like copying to clipboard) via icon changes and color transitions significantly improves user confidence in the tool's responsiveness. High-contrast focus indicators using `:focus-visible` are essential for accessibility in dark-themed interfaces to ensure clear navigation for keyboard users.
+**Action:** Implement temporary success states (e.g., ✅ icon) for "Copy" actions and always provide explicit focus styles that are only visible when navigating via keyboard.
