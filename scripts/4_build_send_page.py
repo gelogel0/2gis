@@ -48,7 +48,8 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
-.offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
+.offer-wrapper { display: flex; align-items: flex-start; gap: 8px; }
+.offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap; flex: 1;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
@@ -56,6 +57,7 @@ input[type="text"], input[type="search"] {
   padding: 8px 12px; background: #1a1f29; border: 1px solid #2a313b; color: #e6e8eb;
   border-radius: 6px; width: 300px;
 }
+*:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 .filter-row { margin-bottom: 16px; display: flex; gap: 8px; align-items: center; }
 </style>
 </head>
@@ -71,7 +73,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." aria-label="Search leads" oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -164,6 +166,20 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    const offer = copyBtn.dataset.offer || "";
+    navigator.clipboard.writeText(offer).then(() => {{
+      const oldText = copyBtn.textContent;
+      copyBtn.textContent = "✓";
+      setTimeout(() => {{ copyBtn.textContent = oldText; }}, 2000);
+    }}).catch(err => {{
+      console.error("Failed to copy:", err);
+    }});
+    return;
   }}
 }});
 </script>
