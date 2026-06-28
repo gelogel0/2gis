@@ -48,10 +48,18 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.offer-wrapper { display: flex; align-items: flex-start; gap: 8px; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
-              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; flex-grow: 1; }
+.copy-btn {
+  background: #2a313b; color: #94a3b8; border: none; border-radius: 6px;
+  padding: 6px 8px; cursor: pointer; font-size: 14px; transition: all 0.2s;
+}
+.copy-btn:hover { background: #3a414b; color: #e6e8eb; }
+.copy-success { color: #4ade80 !important; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
+.row-sent .send-btn, .row-sent .mark-btn { pointer-events: none; opacity: 0.5; }
 input[type="text"], input[type="search"] {
   padding: 8px 12px; background: #1a1f29; border: 1px solid #2a313b; color: #e6e8eb;
   border-radius: 6px; width: 300px;
@@ -71,7 +79,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()" aria-label="Search leads">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -164,6 +172,25 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    const text = copyBtn.dataset.offer || "";
+    navigator.clipboard.writeText(text).then(() => {{
+      const oldText = copyBtn.textContent;
+      copyBtn.textContent = "✅";
+      copyBtn.classList.add("copy-success");
+      setTimeout(() => {{
+        copyBtn.textContent = oldText;
+        copyBtn.classList.remove("copy-success");
+      }}, 2000);
+    }}).catch(err => {{
+      console.error("Copy failed", err);
+      copyBtn.textContent = "⚠";
+    }});
+    return;
   }}
 }});
 </script>
