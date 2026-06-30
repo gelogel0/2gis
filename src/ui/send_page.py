@@ -52,6 +52,8 @@ def row_html(idx: int, lead: dict) -> str:
         else '<span class="tag">no phone</span>'
     )
 
+    offer_attr = escape(lead.get("generated_offer") or "", quote=True)
+
     return f"""
 <tr class="template-{template}" data-id="{lead_id_attr}">
   <td>{idx}</td>
@@ -59,7 +61,12 @@ def row_html(idx: int, lead: dict) -> str:
   <td>{category}</td>
   <td>{city}</td>
   <td><span class="tag">{template}</span></td>
-  <td><div class="offer-text">{offer}</div></td>
+  <td>
+    <div class="offer-wrapper" style="display: flex; gap: 4px; align-items: flex-start;">
+      <div class="offer-text">{offer}</div>
+      <button class="copy-btn js-copy-btn" data-offer="{offer_attr}" aria-label="Copy offer">📋</button>
+    </div>
+  </td>
   <td>{send_btn}<button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}">mark sent</button></td>
 </tr>
 """.strip()
