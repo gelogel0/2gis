@@ -48,8 +48,17 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
-.offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
+.offer-wrapper { display: flex; align-items: flex-start; gap: 8px; max-width: 520px; }
+.offer-text { font-size: 13px; color: #cbd5e1; flex-grow: 1; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.copy-btn {
+  background: #2a313b; border: none; border-radius: 6px; padding: 6px;
+  cursor: pointer; font-size: 14px; color: #94a3b8; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.copy-btn:hover { background: #3a414b; color: #e6e8eb; }
+.copy-btn:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
+.copy-success { color: #4ade80 !important; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -71,7 +80,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()" aria-label="Search by name or category">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -164,6 +173,24 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    const offerTextDiv = copyBtn.closest(".offer-wrapper").querySelector(".offer-text");
+    const offer = offerTextDiv ? offerTextDiv.innerText : "";
+    navigator.clipboard.writeText(offer).then(() => {{
+      const originalText = copyBtn.textContent;
+      copyBtn.textContent = "✅";
+      copyBtn.classList.add("copy-success");
+      setTimeout(() => {{
+        copyBtn.textContent = originalText;
+        copyBtn.classList.remove("copy-success");
+      }}, 2000);
+    }}).catch(err => {{
+      console.error("Failed to copy:", err);
+    }});
   }}
 }});
 </script>
