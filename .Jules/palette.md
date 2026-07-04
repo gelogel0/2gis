@@ -1,0 +1,3 @@
+## 2026-07-04 - [JavaScript Brace Handling in Python-generated HTML]
+**Learning:** In this project, the `scripts/4_build_send_page.py` uses `.replace()` on a raw HTML template. To maintain valid JavaScript in the output when using curly braces (e.g., for event delegation or arrow functions), they must be written as double braces `{{ }}` in the template and then converted back to single braces `{ }` at the end of the substitution chain. Failing to do this results in invalid JavaScript or broken logic.
+**Action:** Always include `.replace("{{", "{").replace("}}", "}")` at the end of the HTML generation string in `scripts/4_build_send_page.py` when adding new JavaScript features.
