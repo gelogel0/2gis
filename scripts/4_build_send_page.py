@@ -42,14 +42,21 @@ tr:last-child td { border-bottom: none; }
   text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
   white-space: nowrap;
 }
-.send-btn:hover { background: #1ebe5b; }
+.send-btn:hover { background: #1ebe5b; transform: scale(1.05); }
+.send-btn:active { transform: scale(0.95); }
 .mark-btn {
   margin-left: 6px; padding: 6px 10px; background: #2a313b; color: #94a3b8;
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
-.mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.mark-btn:hover { background: #3a414b; color: #e6e8eb; transform: scale(1.05); }
+.mark-btn:active { transform: scale(0.95); }
+.offer-wrapper { display: flex; align-items: flex-start; gap: 4px; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
-              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; flex-grow: 1; }
+.copy-btn { background: transparent; border: none; cursor: pointer; padding: 4px; font-size: 14px; border-radius: 4px; transition: transform 0.1s; }
+.copy-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+.copy-btn:active { transform: scale(0.95); }
+.copy-success { color: #4ade80 !important; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -57,6 +64,8 @@ input[type="text"], input[type="search"] {
   border-radius: 6px; width: 300px;
 }
 .filter-row { margin-bottom: 16px; display: flex; gap: 8px; align-items: center; }
+*:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
+button, a { transition: transform 0.1s; }
 </style>
 </head>
 <body>
@@ -164,6 +173,28 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    const text = wrapper.querySelector(".offer-text").innerText;
+    navigator.clipboard.writeText(text).then(() => {{
+      const original = copyBtn.textContent;
+      copyBtn.textContent = "✅";
+      copyBtn.classList.add("copy-success");
+      copyBtn.setAttribute("aria-label", "Copied!");
+      setTimeout(() => {{
+        copyBtn.textContent = original;
+        copyBtn.classList.remove("copy-success");
+        copyBtn.setAttribute("aria-label", "Copy offer to clipboard");
+      }}, 2000);
+    }}).catch(err => {{
+      console.error("Clipboard copy failed", err);
+      copyBtn.textContent = "❌";
+    }});
+    return;
   }}
 }});
 </script>
@@ -198,6 +229,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
