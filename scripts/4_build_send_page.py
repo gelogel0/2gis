@@ -48,10 +48,19 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.offer-wrapper { display: flex; align-items: flex-start; gap: 8px; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
-              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; flex-grow: 1; }
+.copy-btn {
+  background: #2a313b; color: #94a3b8; border: none; border-radius: 6px;
+  padding: 6px; cursor: pointer; font-size: 14px; transition: transform 0.1s;
+}
+.copy-btn:hover { background: #3a414b; color: #e6e8eb; transform: scale(1.1); }
+.copy-btn:active { transform: scale(0.95); }
+.copy-success { color: #4ade80 !important; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 input[type="text"], input[type="search"] {
   padding: 8px 12px; background: #1a1f29; border: 1px solid #2a313b; color: #e6e8eb;
   border-radius: 6px; width: 300px;
@@ -71,7 +80,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()" aria-label="Search leads">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -152,6 +161,27 @@ async function markSent(leadId, btn) {{
   }}
 }}
 
+async function copyToClipboard(btn) {{
+  const wrapper = btn.closest(".offer-wrapper");
+  const text = wrapper.querySelector(".offer-text").innerText;
+  try {{
+    await navigator.clipboard.writeText(text);
+    const originalIcon = btn.textContent;
+    btn.textContent = "✅";
+    btn.classList.add("copy-success");
+    btn.setAttribute("aria-label", "Copied!");
+    setTimeout(() => {{
+      btn.textContent = originalIcon;
+      btn.classList.remove("copy-success");
+      btn.setAttribute("aria-label", "Copy offer text");
+    }}, 2000);
+  }} catch (err) {{
+    console.error("Failed to copy:", err);
+    btn.textContent = "❌";
+    setTimeout(() => {{ btn.textContent = "📋"; }}, 2000);
+  }}
+}}
+
 document.addEventListener("click", (event) => {{
   const sendBtn = event.target.closest(".js-send-btn");
   if (sendBtn) {{
@@ -164,6 +194,13 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    copyToClipboard(copyBtn);
+    return;
   }}
 }});
 </script>
@@ -198,6 +235,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
