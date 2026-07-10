@@ -48,8 +48,18 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.offer-wrapper { display: flex; align-items: flex-start; gap: 8px; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
-              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; flex-grow: 1; }
+.copy-btn {
+  background: #2a313b; border: none; border-radius: 4px; cursor: pointer;
+  padding: 4px 8px; font-size: 14px; transition: transform 0.1s, background 0.1s;
+  display: flex; align-items: center; justify-content: center;
+}
+.copy-btn:hover { background: #3a414b; transform: scale(1.1); }
+.copy-btn:active { transform: scale(0.95); }
+.copy-btn:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
+.copy-success { color: #4ade80 !important; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -71,7 +81,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." aria-label="Search leads" oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -123,6 +133,34 @@ function applyFilter() {{
   }});
 }}
 
+async function copyOffer(btn) {{
+  const wrapper = btn.closest(".offer-wrapper");
+  const text = wrapper.querySelector(".offer-text").innerText;
+  try {{
+    await navigator.clipboard.writeText(text);
+    const originalContent = btn.textContent;
+    const originalLabel = btn.getAttribute("aria-label");
+    btn.textContent = "✅";
+    btn.classList.add("copy-success");
+    btn.setAttribute("aria-label", "Copied!");
+    setTimeout(() => {{
+      btn.textContent = originalContent;
+      btn.classList.remove("copy-success");
+      btn.setAttribute("aria-label", originalLabel);
+    }}, 2000);
+  }} catch (err) {{
+    console.error("Failed to copy:", err);
+    const originalContent = btn.textContent;
+    const originalLabel = btn.getAttribute("aria-label");
+    btn.textContent = "❌";
+    btn.setAttribute("aria-label", "Failed to copy");
+    setTimeout(() => {{
+      btn.textContent = originalContent;
+      btn.setAttribute("aria-label", originalLabel);
+    }}, 2000);
+  }}
+}}
+
 async function markSent(leadId, btn) {{
   const row = btn.closest("tr");
   row.classList.add("row-sent");
@@ -164,6 +202,13 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    copyOffer(copyBtn);
+    return;
   }}
 }});
 </script>
@@ -198,6 +243,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
