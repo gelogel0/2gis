@@ -52,6 +52,8 @@ tr:last-child td { border-bottom: none; }
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
+.copy-success { color: #4ade80 !important; }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 input[type="text"], input[type="search"] {
   padding: 8px 12px; background: #1a1f29; border: 1px solid #2a313b; color: #e6e8eb;
   border-radius: 6px; width: 300px;
@@ -71,7 +73,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()" aria-label="Поиск лидов">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -123,6 +125,36 @@ function applyFilter() {{
   }});
 }}
 
+async function copyOffer(btn) {{
+  if (btn.dataset.isCopying) return;
+  const wrapper = btn.closest(".offer-wrapper");
+  const text = wrapper.querySelector(".offer-text").innerText;
+  try {{
+    await navigator.clipboard.writeText(text);
+    const originalText = btn.textContent;
+    const originalAria = btn.getAttribute("aria-label");
+    btn.dataset.isCopying = "true";
+    btn.textContent = "✅";
+    btn.setAttribute("aria-label", "Copied!");
+    btn.classList.add("copy-success");
+    setTimeout(() => {{
+      btn.textContent = originalText;
+      btn.setAttribute("aria-label", originalAria);
+      btn.classList.remove("copy-success");
+      delete btn.dataset.isCopying;
+    }}, 2000);
+  }} catch (err) {{
+    console.error("Failed to copy:", err);
+    const originalAria = btn.getAttribute("aria-label");
+    btn.textContent = "❌";
+    btn.setAttribute("aria-label", "Failed to copy");
+    setTimeout(() => {{
+      btn.textContent = "📋";
+      btn.setAttribute("aria-label", originalAria);
+    }}, 2000);
+  }}
+}}
+
 async function markSent(leadId, btn) {{
   const row = btn.closest("tr");
   row.classList.add("row-sent");
@@ -164,6 +196,13 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    copyOffer(copyBtn);
+    return;
   }}
 }});
 </script>
