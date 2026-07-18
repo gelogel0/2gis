@@ -40,16 +40,28 @@ tr:last-child td { border-bottom: none; }
 .send-btn {
   display: inline-block; padding: 8px 14px; background: #25D366; color: #0e1116;
   text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
-  white-space: nowrap;
+  white-space: nowrap; transition: transform 0.1s ease;
 }
-.send-btn:hover { background: #1ebe5b; }
+.send-btn:hover { background: #1ebe5b; transform: scale(1.05); }
+.send-btn:active { transform: scale(0.95); }
 .mark-btn {
   margin-left: 6px; padding: 6px 10px; background: #2a313b; color: #94a3b8;
-  border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
+  border: none; border-radius: 6px; font-size: 12px; cursor: pointer; transition: transform 0.1s ease;
 }
-.mark-btn:hover { background: #3a414b; color: #e6e8eb; }
-.offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
+.mark-btn:hover { background: #3a414b; color: #e6e8eb; transform: scale(1.05); }
+.mark-btn:active { transform: scale(0.95); }
+.offer-wrapper { display: flex; gap: 8px; align-items: flex-start; }
+.offer-text { font-size: 13px; color: #cbd5e1; flex: 1; max-width: 440px; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.copy-btn {
+  background: #2a313b; border: none; border-radius: 6px; cursor: pointer;
+  padding: 6px; font-size: 13px; display: inline-flex; align-items: center; justify-content: center;
+  transition: transform 0.1s ease, background 0.1s ease; flex-shrink: 0;
+}
+.copy-btn:hover { background: #3a414b; transform: scale(1.1); }
+.copy-btn:active { transform: scale(0.95); }
+.copy-success { color: #4ade80 !important; }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -152,6 +164,32 @@ async function markSent(leadId, btn) {{
   }}
 }}
 
+async function copyOffer(text, btn) {{
+  if (btn.dataset.isCopying === "true") return;
+  btn.dataset.isCopying = "true";
+
+  const originalText = btn.textContent;
+  const originalAria = btn.getAttribute("aria-label") || "Copy offer";
+
+  try {{
+    await navigator.clipboard.writeText(text);
+    btn.textContent = "✅";
+    btn.setAttribute("aria-label", "Copied!");
+    btn.classList.add("copy-success");
+  }} catch (err) {{
+    console.error("Clipboard copy failed:", err);
+    btn.textContent = "❌";
+    btn.setAttribute("aria-label", "Failed to copy");
+  }}
+
+  setTimeout(() => {{
+    btn.textContent = originalText;
+    btn.setAttribute("aria-label", originalAria);
+    btn.classList.remove("copy-success");
+    delete btn.dataset.isCopying;
+  }}, 2000);
+}}
+
 document.addEventListener("click", (event) => {{
   const sendBtn = event.target.closest(".js-send-btn");
   if (sendBtn) {{
@@ -164,6 +202,19 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    if (wrapper) {{
+      const textEl = wrapper.querySelector(".offer-text");
+      if (textEl) {{
+        copyOffer(textEl.innerText, copyBtn);
+      }}
+    }}
+    return;
   }}
 }});
 </script>
@@ -198,6 +249,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
