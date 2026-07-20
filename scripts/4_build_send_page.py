@@ -37,6 +37,19 @@ tr:last-child td { border-bottom: none; }
 .template-A { background: rgba(74,222,128,0.1); }
 .template-B { background: rgba(96,165,250,0.1); }
 .template-C { background: rgba(251,191,36,0.1); }
+.send-btn, .mark-btn, .copy-btn {
+  transition: transform 0.15s ease-in-out, background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+.send-btn:hover, .mark-btn:hover, .copy-btn:hover {
+  transform: scale(1.1);
+}
+.send-btn:active, .mark-btn:active, .copy-btn:active {
+  transform: scale(0.95);
+}
+:focus-visible {
+  outline: 2px solid #4ade80 !important;
+  outline-offset: 2px;
+}
 .send-btn {
   display: inline-block; padding: 8px 14px; background: #25D366; color: #0e1116;
   text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
@@ -48,8 +61,19 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
-.offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
+.offer-wrapper {
+  display: flex; gap: 8px; align-items: flex-start; max-width: 530px;
+}
+.offer-text { font-size: 13px; color: #cbd5e1; flex: 1; min-width: 0; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.copy-btn {
+  background: #2a313b; border: none; font-size: 14px; cursor: pointer;
+  padding: 6px 8px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+}
+.copy-btn:hover { background: #3a414b; }
+.copy-success {
+  color: #4ade80 !important;
+}
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -71,7 +95,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" aria-label="Поиск лидов" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -164,6 +188,44 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying === "true") return;
+    copyBtn.dataset.isCopying = "true";
+
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    const offerTextEl = wrapper ? wrapper.querySelector(".offer-text") : null;
+    const textToCopy = offerTextEl ? offerTextEl.innerText : "";
+
+    const originalText = copyBtn.textContent;
+    const originalAria = copyBtn.getAttribute("aria-label") || "Копировать оффер";
+
+    navigator.clipboard.writeText(textToCopy).then(() => {{
+      copyBtn.textContent = "✅";
+      copyBtn.setAttribute("aria-label", "Скопировано!");
+      copyBtn.classList.add("copy-success");
+
+      setTimeout(() => {{
+        copyBtn.textContent = originalText;
+        copyBtn.setAttribute("aria-label", originalAria);
+        copyBtn.classList.remove("copy-success");
+        copyBtn.dataset.isCopying = "false";
+      }}, 2000);
+    }}).catch((err) => {{
+      console.error("Clipboard write error: ", err);
+      copyBtn.textContent = "❌";
+      copyBtn.setAttribute("aria-label", "Ошибка копирования");
+
+      setTimeout(() => {{
+        copyBtn.textContent = originalText;
+        copyBtn.setAttribute("aria-label", originalAria);
+        copyBtn.dataset.isCopying = "false";
+      }}, 2000);
+    }});
+    return;
   }}
 }});
 </script>
