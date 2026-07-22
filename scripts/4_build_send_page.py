@@ -57,6 +57,16 @@ input[type="text"], input[type="search"] {
   border-radius: 6px; width: 300px;
 }
 .filter-row { margin-bottom: 16px; display: flex; gap: 8px; align-items: center; }
+.offer-wrapper { display: flex; align-items: flex-start; gap: 6px; }
+.copy-btn {
+  background: #2a313b; border: none; border-radius: 4px; padding: 6px 8px; cursor: pointer;
+  font-size: 14px; transition: transform 0.15s ease, background-color 0.15s ease; display: inline-flex;
+  align-items: center; justify-content: center;
+}
+.copy-btn:hover { background: #3a414b; transform: scale(1.1); }
+.copy-btn:active { transform: scale(0.95); }
+.copy-success { color: #4ade80 !important; }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -71,7 +81,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()" aria-label="Поиск лидов">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -164,6 +174,44 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying === "true") return;
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    if (!wrapper) return;
+    const txtEl = wrapper.querySelector(".offer-text");
+    if (!txtEl) return;
+    const textToCopy = txtEl.innerText;
+
+    copyBtn.dataset.isCopying = "true";
+    navigator.clipboard.writeText(textToCopy).then(() => {{
+      const originalText = copyBtn.textContent;
+      const originalAria = copyBtn.getAttribute("aria-label");
+      copyBtn.textContent = "✅";
+      copyBtn.setAttribute("aria-label", "Скопировано!");
+      copyBtn.classList.add("copy-success");
+      setTimeout(() => {{
+        copyBtn.textContent = originalText;
+        copyBtn.setAttribute("aria-label", originalAria);
+        copyBtn.classList.remove("copy-success");
+        copyBtn.dataset.isCopying = "false";
+      }}, 2000);
+    }}).catch(err => {{
+      console.error("Copy failed: ", err);
+      const originalText = copyBtn.textContent;
+      const originalAria = copyBtn.getAttribute("aria-label");
+      copyBtn.textContent = "❌";
+      copyBtn.setAttribute("aria-label", "Ошибка копирования");
+      setTimeout(() => {{
+        copyBtn.textContent = originalText;
+        copyBtn.setAttribute("aria-label", originalAria);
+        copyBtn.dataset.isCopying = "false";
+      }}, 2000);
+    }});
+    return;
   }}
 }});
 </script>
@@ -198,6 +246,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
