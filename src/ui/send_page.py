@@ -45,21 +45,33 @@ def row_html(idx: int, lead: dict) -> str:
     lead_id_attr = escape(lead_id, quote=True)
     phone = escape(lead.get("main_phone", "-") or "-")
 
-    send_btn = (
-        f'<a class="send-btn js-send-btn" href="{wa_link}" target="_blank" '
-        f'data-lead-id="{lead_id_attr}">📨 Send WA</a>'
-        if wa_link
-        else '<span class="tag">no phone</span>'
-    )
+    is_sent = lead.get("status") == "sent"
+    status_class = " row-sent" if is_sent else ""
+    mark_disabled = " disabled" if is_sent else ""
+    mark_text = "✓ sent" if is_sent else "mark sent"
+
+    if wa_link:
+        send_style = " style=\"pointer-events: none; opacity: 0.5;\"" if is_sent else ""
+        send_btn = (
+            f'<a class="send-btn js-send-btn" href="{wa_link}" target="_blank" '
+            f'data-lead-id="{lead_id_attr}"{send_style}>📨 Send WA</a>'
+        )
+    else:
+        send_btn = '<span class="tag">no phone</span>'
 
     return f"""
-<tr class="template-{template}" data-id="{lead_id_attr}">
+<tr class="template-{template}{status_class}" data-id="{lead_id_attr}">
   <td>{idx}</td>
   <td><strong>{name}</strong><br><span class="tag">{phone}</span></td>
   <td>{category}</td>
   <td>{city}</td>
   <td><span class="tag">{template}</span></td>
-  <td><div class="offer-text">{offer}</div></td>
-  <td>{send_btn}<button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}">mark sent</button></td>
+  <td>
+    <div class="offer-wrapper">
+      <div class="offer-text">{offer}</div>
+      <button class="copy-btn js-copy-btn" aria-label="Copy offer to clipboard">📋</button>
+    </div>
+  </td>
+  <td>{send_btn}<button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}"{mark_disabled}>{mark_text}</button></td>
 </tr>
 """.strip()
