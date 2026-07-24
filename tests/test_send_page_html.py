@@ -28,7 +28,25 @@ class SendPageHtmlTests(unittest.TestCase):
         self.assertNotIn("<script>x</script>", row)
         self.assertIn('class="send-btn js-send-btn"', row)
         self.assertIn('class="mark-btn js-mark-btn"', row)
+        self.assertIn('class="copy-btn js-copy-btn"', row)
         self.assertNotIn("markSent(", row)
+
+    def test_row_html_handles_sent_status(self):
+        lead = {
+            "id": "123",
+            "name": "OK",
+            "category": "OK",
+            "city": "OK",
+            "main_phone": "+77000000000",
+            "generated_offer": "Offer",
+            "wa_link": "https://wa.me/77000000000",
+            "template_id": "A",
+            "status": "sent",
+        }
+        row = row_html(2, lead)
+        self.assertIn('class="template-A row-sent"', row)
+        self.assertIn('style="pointer-events: none;"', row)
+        self.assertIn('disabled>✓ sent</button>', row)
 
     def test_row_html_rejects_non_wa_link_and_unknown_template(self):
         lead = {

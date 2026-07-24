@@ -1,0 +1,5 @@
+# Palette UX/Accessibility Journal
+
+## 2025-07-24 - Zero-Jank Copy to Clipboard and Accessibility-First State Recovery
+**Learning:** For dark-themed data tables with dynamic multi-line content, copy-to-clipboard interactions can cause visual shift (jank) if they modify the layout or display size. Combining flexbox containers (e.g. `align-items: flex-start`) with static height/width bounds on icon buttons (e.g. `height: 32px; width: 32px`) keeps elements perfectly aligned. To prevent rapid-click race conditions, guarding the execution block with a dataset state flag (like `btn.dataset.isCopying`) guarantees that the success state timeout is not interrupted, while updating `aria-label` dynamically ensures that screen readers announce the success state.
+**Action:** Always wrap copy button triggers in a `display: flex` container, style buttons with static dimensions, guard timeouts with a dataset state flag, and dynamically set `aria-label` attributes to match the success/failure state before reverting them to standard defaults.
