@@ -1,0 +1,3 @@
+## 2025-02-15 - Granular Row Disabling vs. Complete Row Freezing
+**Learning:** When an item is marked as processed in a table list, applying opacity or blocking pointer-events on the entire row is highly detrimental to accessibility. It prevents screen readers from reading the table text, stops users from selecting text, and disables useful action buttons like "Copy to Clipboard" which should remain interactive.
+**Action:** Always disable interactive actions individually (e.g., using native `disabled` on action buttons and targeted pointer-events on links) while keeping text selectable and utility tools like "Copy" fully active.
