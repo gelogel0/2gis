@@ -30,6 +30,23 @@ class SendPageHtmlTests(unittest.TestCase):
         self.assertIn('class="mark-btn js-mark-btn"', row)
         self.assertNotIn("markSent(", row)
 
+    def test_row_html_includes_copy_button_and_wrapper(self):
+        lead = {
+            "id": "lead-456",
+            "name": "Test Business",
+            "category": "Spa",
+            "city": "Astana",
+            "main_phone": "+77011234567",
+            "generated_offer": "Specially personalized offer!",
+            "wa_link": "https://wa.me/77011234567?text=Hi",
+            "template_id": "B",
+        }
+        row = row_html(1, lead)
+        self.assertIn('class="offer-wrapper"', row)
+        self.assertIn('class="copy-btn js-copy-btn"', row)
+        self.assertIn('aria-label="Copy offer to clipboard"', row)
+        self.assertIn('data-lead-id="lead-456"', row)
+
     def test_row_html_rejects_non_wa_link_and_unknown_template(self):
         lead = {
             "id": "123",

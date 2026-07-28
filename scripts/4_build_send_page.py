@@ -48,8 +48,21 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
-.offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
+.offer-wrapper { display: flex; align-items: flex-start; gap: 8px; max-width: 480px; }
+.offer-text { flex: 1; font-size: 13px; color: #cbd5e1; max-width: 400px; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.copy-btn {
+  background: #2a313b; border: none; border-radius: 6px; color: #94a3b8;
+  cursor: pointer; padding: 6px; font-size: 14px; display: flex; align-items: center; justify-content: center;
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+.copy-btn:hover { background: #3a414b; color: #e6e8eb; transform: scale(1.1); }
+.copy-btn:active { transform: scale(0.95); }
+.copy-success { color: #4ade80 !important; }
+.copy-btn:focus-visible, .mark-btn:focus-visible, .send-btn:focus-visible {
+  outline: 2px solid #4ade80;
+  outline-offset: 2px;
+}
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -125,7 +138,23 @@ function applyFilter() {{
 
 async function markSent(leadId, btn) {{
   const row = btn.closest("tr");
+  if (!row) return;
+
   row.classList.add("row-sent");
+
+  const markBtn = row.querySelector(".js-mark-btn");
+  const sendBtn = row.querySelector(".js-send-btn");
+
+  const originalMarkText = markBtn ? markBtn.textContent : "mark sent";
+  if (markBtn) {{
+    markBtn.textContent = "sending...";
+    markBtn.disabled = true;
+  }}
+  if (sendBtn) {{
+    sendBtn.style.pointerEvents = "none";
+    sendBtn.style.opacity = "0.5";
+  }}
+
   const sentCounter = document.getElementById("stat-sent");
   sentCounter.textContent = parseInt(sentCounter.textContent || 0) + 1;
   // PATCH в Supabase через REST API (anon key + RLS policy должна разрешать)
@@ -142,13 +171,44 @@ async function markSent(leadId, btn) {{
     }});
     if (!resp.ok) {{
       console.error("Failed to mark sent:", await resp.text());
-      btn.textContent = "⚠ Re-mark";
+      row.classList.remove("row-sent");
+      sentCounter.textContent = Math.max(0, parseInt(sentCounter.textContent || 1) - 1);
+      if (markBtn) {{
+        markBtn.textContent = "⚠ Re-mark";
+        markBtn.disabled = false;
+      }}
+      if (sendBtn) {{
+        sendBtn.style.pointerEvents = "";
+        sendBtn.style.opacity = "";
+      }}
+      setTimeout(() => {{
+        if (markBtn && markBtn.textContent === "⚠ Re-mark") {{
+          markBtn.textContent = originalMarkText;
+        }}
+      }}, 2000);
     }} else {{
-      btn.textContent = "✓ sent";
-      btn.disabled = true;
+      if (markBtn) {{
+        markBtn.textContent = "✓ sent";
+        markBtn.disabled = true;
+      }}
     }}
   }} catch (e) {{
     console.error(e);
+    row.classList.remove("row-sent");
+    sentCounter.textContent = Math.max(0, parseInt(sentCounter.textContent || 1) - 1);
+    if (markBtn) {{
+      markBtn.textContent = "⚠ Re-mark";
+      markBtn.disabled = false;
+    }}
+    if (sendBtn) {{
+      sendBtn.style.pointerEvents = "";
+      sendBtn.style.opacity = "";
+    }}
+    setTimeout(() => {{
+      if (markBtn && markBtn.textContent === "⚠ Re-mark") {{
+        markBtn.textContent = originalMarkText;
+      }}
+    }}, 2000);
   }}
 }}
 
@@ -164,6 +224,47 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying === "true") {{
+      return;
+    }}
+    copyBtn.dataset.isCopying = "true";
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    const offerTextEl = wrapper ? wrapper.querySelector(".offer-text") : null;
+    if (offerTextEl) {{
+      const textToCopy = offerTextEl.innerText;
+      navigator.clipboard.writeText(textToCopy).then(() => {{
+        const originalText = copyBtn.textContent;
+        const originalLabel = copyBtn.getAttribute("aria-label") || "";
+        copyBtn.textContent = "✅";
+        copyBtn.setAttribute("aria-label", "Copied successfully!");
+        copyBtn.classList.add("copy-success");
+        setTimeout(() => {{
+          copyBtn.textContent = originalText;
+          copyBtn.setAttribute("aria-label", originalLabel);
+          copyBtn.classList.remove("copy-success");
+          copyBtn.dataset.isCopying = "false";
+        }}, 2000);
+      }}).catch((err) => {{
+        console.error("Failed to copy text: ", err);
+        const originalText = copyBtn.textContent;
+        const originalLabel = copyBtn.getAttribute("aria-label") || "";
+        copyBtn.textContent = "❌";
+        copyBtn.setAttribute("aria-label", "Failed to copy");
+        setTimeout(() => {{
+          copyBtn.textContent = originalText;
+          copyBtn.setAttribute("aria-label", originalLabel);
+          copyBtn.dataset.isCopying = "false";
+        }}, 2000);
+      }});
+    }} else {{
+      copyBtn.dataset.isCopying = "false";
+    }}
+    return;
   }}
 }});
 </script>
@@ -198,6 +299,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
