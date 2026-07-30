@@ -46,6 +46,44 @@ class SendPageHtmlTests(unittest.TestCase):
         self.assertIn('<span class="tag">no phone</span>', row)
         self.assertNotIn('href="javascript:alert(1)"', row)
 
+    def test_row_html_renders_copy_button_and_sent_status(self):
+        # Lead with status != sent
+        lead_unsent = {
+            "id": "123",
+            "name": "Unsent Lead",
+            "category": "Beauty",
+            "city": "Almaty",
+            "main_phone": "77000000000",
+            "generated_offer": "Unsent offer",
+            "wa_link": "https://wa.me/77000000000",
+            "template_id": "B",
+            "status": "generated",
+        }
+        row_unsent = row_html(1, lead_unsent)
+        self.assertIn('class="offer-wrapper"', row_unsent)
+        self.assertIn('class="copy-btn js-copy-btn"', row_unsent)
+        self.assertNotIn("row-sent", row_unsent)
+        self.assertNotIn("disabled", row_unsent)
+        self.assertIn("mark sent", row_unsent)
+
+        # Lead with status == sent
+        lead_sent = {
+            "id": "456",
+            "name": "Sent Lead",
+            "category": "Beauty",
+            "city": "Almaty",
+            "main_phone": "77000000000",
+            "generated_offer": "Sent offer",
+            "wa_link": "https://wa.me/77000000000",
+            "template_id": "C",
+            "status": "sent",
+        }
+        row_sent = row_html(2, lead_sent)
+        self.assertIn("row-sent", row_sent)
+        self.assertIn("disabled", row_sent)
+        self.assertIn("✓ sent", row_sent)
+        self.assertIn("style=\"pointer-events: none; opacity: 0.5;\"", row_sent)
+
     def test_safe_wa_link_strict_validation(self):
         self.assertEqual(
             safe_wa_link("https://wa.me/77000000000?text=hello"),
