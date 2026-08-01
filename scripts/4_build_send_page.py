@@ -48,8 +48,18 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.offer-wrapper { display: flex; align-items: flex-start; gap: 8px; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
-              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; flex-grow: 1; }
+.copy-btn {
+  background: #2a313b; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;
+  padding: 6px 8px; display: inline-flex; align-items: center; justify-content: center;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.copy-btn:hover { background: #3a414b; transform: scale(1.1); }
+.copy-btn:active { transform: scale(0.95); }
+.copy-btn:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
+.copy-success { color: #4ade80 !important; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -164,6 +174,41 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying === "true") return;
+    copyBtn.dataset.isCopying = "true";
+
+    const row = copyBtn.closest("tr");
+    const offerEl = row ? row.querySelector(".offer-text") : null;
+    const textToCopy = offerEl ? offerEl.innerText : "";
+
+    navigator.clipboard.writeText(textToCopy).then(() => {{
+      const origText = copyBtn.textContent;
+      copyBtn.textContent = "✅";
+      copyBtn.classList.add("copy-success");
+      copyBtn.setAttribute("aria-label", "Скопировано!");
+      setTimeout(() => {{
+        copyBtn.textContent = origText;
+        copyBtn.classList.remove("copy-success");
+        copyBtn.setAttribute("aria-label", "Скопировать предложение");
+        copyBtn.dataset.isCopying = "false";
+      }}, 2000);
+    }}).catch(err => {{
+      console.error("Failed to copy text: ", err);
+      const origText = copyBtn.textContent;
+      copyBtn.textContent = "❌";
+      copyBtn.setAttribute("aria-label", "Ошибка копирования");
+      setTimeout(() => {{
+        copyBtn.textContent = origText;
+        copyBtn.setAttribute("aria-label", "Скопировать предложение");
+        copyBtn.dataset.isCopying = "false";
+      }}, 2000);
+    }});
+    return;
   }}
 }});
 </script>
@@ -198,6 +243,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
