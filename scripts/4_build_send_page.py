@@ -48,8 +48,18 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
-.offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
+.offer-wrapper { display: flex; align-items: flex-start; gap: 8px; max-width: 480px; }
+.offer-text { font-size: 13px; color: #cbd5e1; flex-grow: 1; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.copy-btn {
+  background: none; border: none; font-size: 16px; cursor: pointer; padding: 4px;
+  border-radius: 4px; transition: transform 0.1s ease, background-color 0.1s ease;
+  user-select: none;
+}
+.copy-btn:hover { transform: scale(1.1); background-color: rgba(255,255,255,0.08); }
+.copy-btn:active { transform: scale(0.95); }
+.copy-btn:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
+.copy-success { color: #4ade80 !important; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -164,6 +174,47 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying === "true") return;
+    copyBtn.dataset.isCopying = "true";
+
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    const offerTextEl = wrapper ? wrapper.querySelector(".offer-text") : null;
+    const textToCopy = offerTextEl ? offerTextEl.innerText : "";
+
+    navigator.clipboard.writeText(textToCopy).then(() => {{
+      const origText = copyBtn.textContent;
+      const origLabel = copyBtn.getAttribute("aria-label");
+
+      copyBtn.textContent = "✅";
+      copyBtn.setAttribute("aria-label", "Copied!");
+      copyBtn.classList.add("copy-success");
+
+      setTimeout(() => {{
+        copyBtn.textContent = origText;
+        copyBtn.setAttribute("aria-label", origLabel);
+        copyBtn.classList.remove("copy-success");
+        delete copyBtn.dataset.isCopying;
+      }}, 2000);
+    }}).catch(err => {{
+      console.error("Failed to copy text: ", err);
+      const origText = copyBtn.textContent;
+      const origLabel = copyBtn.getAttribute("aria-label");
+
+      copyBtn.textContent = "❌";
+      copyBtn.setAttribute("aria-label", "Failed to copy");
+
+      setTimeout(() => {{
+        copyBtn.textContent = origText;
+        copyBtn.setAttribute("aria-label", origLabel);
+        delete copyBtn.dataset.isCopying;
+      }}, 2000);
+    }});
+    return;
   }}
 }});
 </script>
