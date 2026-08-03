@@ -48,8 +48,17 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
-.offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
+.offer-wrapper { display: flex; align-items: flex-start; gap: 8px; width: 100%; max-width: 480px; }
+.offer-text { font-size: 13px; color: #cbd5e1; flex: 1; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.copy-btn {
+  background: transparent; border: none; cursor: pointer; font-size: 14px;
+  padding: 6px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center;
+  transition: transform 0.1s ease;
+}
+.copy-btn:hover { transform: scale(1.1); }
+.copy-btn:active { transform: scale(0.95); }
+.copy-success { color: #4ade80 !important; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -57,6 +66,10 @@ input[type="text"], input[type="search"] {
   border-radius: 6px; width: 300px;
 }
 .filter-row { margin-bottom: 16px; display: flex; gap: 8px; align-items: center; }
+:focus-visible {
+  outline: 2px solid #4ade80 !important;
+  outline-offset: 2px;
+}
 </style>
 </head>
 <body>
@@ -71,7 +84,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()" aria-label="Поиск лидов">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -125,10 +138,46 @@ function applyFilter() {{
 
 async function markSent(leadId, btn) {{
   const row = btn.closest("tr");
+  const wasAlreadySent = row.classList.contains("row-sent");
+
+  // Optimistically update UI
   row.classList.add("row-sent");
   const sentCounter = document.getElementById("stat-sent");
-  sentCounter.textContent = parseInt(sentCounter.textContent || 0) + 1;
-  // PATCH в Supabase через REST API (anon key + RLS policy должна разрешать)
+  const originalCount = parseInt(sentCounter.textContent || 0);
+  if (!wasAlreadySent) {{
+    sentCounter.textContent = originalCount + 1;
+  }}
+
+  const originalText = btn.textContent;
+  const originalAria = btn.getAttribute("aria-label") || "";
+  const originalDisabled = btn.disabled;
+
+  btn.textContent = "...";
+  btn.setAttribute("aria-label", "Marking as sent...");
+
+  // Selectively disable elements in this row
+  const rowSendBtn = row.querySelector(".js-send-btn");
+  if (rowSendBtn) {{
+    rowSendBtn.style.pointerEvents = "none";
+  }}
+
+  function rollback() {{
+    row.classList.remove("row-sent");
+    if (!wasAlreadySent) {{
+      sentCounter.textContent = originalCount;
+    }}
+    if (rowSendBtn) {{
+      rowSendBtn.style.pointerEvents = "";
+    }}
+    btn.textContent = "⚠️ Ошибка";
+    btn.setAttribute("aria-label", "Ошибка при сохранении");
+    setTimeout(() => {{
+      btn.textContent = originalText;
+      btn.setAttribute("aria-label", originalAria);
+      btn.disabled = originalDisabled;
+    }}, 2000);
+  }}
+
   try {{
     const resp = await fetch(`${{SUPABASE_URL}}/rest/v1/leads?id=eq.${{encodeURIComponent(leadId)}}`, {{
       method: "PATCH",
@@ -141,14 +190,17 @@ async function markSent(leadId, btn) {{
       body: JSON.stringify({{ status: "sent", sent_at: new Date().toISOString() }})
     }});
     if (!resp.ok) {{
-      console.error("Failed to mark sent:", await resp.text());
-      btn.textContent = "⚠ Re-mark";
+      const errText = await resp.text();
+      console.error("Failed to mark sent:", errText);
+      rollback();
     }} else {{
       btn.textContent = "✓ sent";
+      btn.setAttribute("aria-label", "Sent successfully");
       btn.disabled = true;
     }}
   }} catch (e) {{
-    console.error(e);
+    console.error("Network error marking sent:", e);
+    rollback();
   }}
 }}
 
@@ -164,6 +216,44 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying === "true") return;
+    copyBtn.dataset.isCopying = "true";
+
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    const textEl = wrapper ? wrapper.querySelector(".offer-text") : null;
+    const textToCopy = textEl ? textEl.innerText : "";
+
+    const originalText = copyBtn.textContent;
+    const originalAria = copyBtn.getAttribute("aria-label") || "";
+
+    navigator.clipboard.writeText(textToCopy)
+      .then(() => {{
+        copyBtn.textContent = "✅";
+        copyBtn.setAttribute("aria-label", "Copied!");
+        copyBtn.classList.add("copy-success");
+        setTimeout(() => {{
+          copyBtn.textContent = originalText;
+          copyBtn.setAttribute("aria-label", originalAria);
+          copyBtn.classList.remove("copy-success");
+          delete copyBtn.dataset.isCopying;
+        }}, 2000);
+      }})
+      .catch((err) => {{
+        console.error("Copy failed:", err);
+        copyBtn.textContent = "❌";
+        copyBtn.setAttribute("aria-label", "Copy failed");
+        setTimeout(() => {{
+          copyBtn.textContent = originalText;
+          copyBtn.setAttribute("aria-label", originalAria);
+          delete copyBtn.dataset.isCopying;
+        }}, 2000);
+      }});
+    return;
   }}
 }});
 </script>
@@ -198,6 +288,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
