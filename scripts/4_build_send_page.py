@@ -57,6 +57,16 @@ input[type="text"], input[type="search"] {
   border-radius: 6px; width: 300px;
 }
 .filter-row { margin-bottom: 16px; display: flex; gap: 8px; align-items: center; }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
+.offer-wrapper { display: flex; align-items: flex-start; gap: 8px; }
+.copy-btn {
+  background: transparent; border: none; font-size: 14px; cursor: pointer;
+  padding: 4px; border-radius: 4px; display: inline-flex; align-items: center;
+  justify-content: center; transition: transform 0.1s ease, background-color 0.1s ease;
+}
+.copy-btn:hover { background-color: rgba(255, 255, 255, 0.1); transform: scale(1.1); }
+.copy-btn:active { transform: scale(0.95); }
+.copy-success { color: #4ade80 !important; }
 </style>
 </head>
 <body>
@@ -71,7 +81,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." aria-label="Поиск лидов" oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -125,10 +135,17 @@ function applyFilter() {{
 
 async function markSent(leadId, btn) {{
   const row = btn.closest("tr");
+  const sendBtn = row ? row.querySelector(".js-send-btn") : null;
   row.classList.add("row-sent");
+  if (sendBtn) sendBtn.style.pointerEvents = "none";
+  const oldBtnText = btn.textContent;
+  btn.textContent = "⌛ sending...";
+  btn.disabled = true;
+
   const sentCounter = document.getElementById("stat-sent");
-  sentCounter.textContent = parseInt(sentCounter.textContent || 0) + 1;
-  // PATCH в Supabase через REST API (anon key + RLS policy должна разрешать)
+  const currentSentVal = parseInt(sentCounter.textContent || 0);
+  sentCounter.textContent = currentSentVal + 1;
+
   try {{
     const resp = await fetch(`${{SUPABASE_URL}}/rest/v1/leads?id=eq.${{encodeURIComponent(leadId)}}`, {{
       method: "PATCH",
@@ -141,14 +158,21 @@ async function markSent(leadId, btn) {{
       body: JSON.stringify({{ status: "sent", sent_at: new Date().toISOString() }})
     }});
     if (!resp.ok) {{
-      console.error("Failed to mark sent:", await resp.text());
-      btn.textContent = "⚠ Re-mark";
-    }} else {{
-      btn.textContent = "✓ sent";
-      btn.disabled = true;
+      throw new Error(await resp.text());
     }}
+    btn.textContent = "✓ sent";
   }} catch (e) {{
     console.error(e);
+    row.classList.remove("row-sent");
+    if (sendBtn) sendBtn.style.pointerEvents = "";
+    sentCounter.textContent = currentSentVal;
+    btn.textContent = "❌ Error";
+    btn.setAttribute("aria-label", "Ошибка сохранения. Нажмите для повтора");
+    setTimeout(() => {{
+      btn.textContent = oldBtnText;
+      btn.disabled = false;
+      btn.removeAttribute("aria-label");
+    }}, 2000);
   }}
 }}
 
@@ -156,7 +180,8 @@ document.addEventListener("click", (event) => {{
   const sendBtn = event.target.closest(".js-send-btn");
   if (sendBtn) {{
     const leadId = sendBtn.dataset.leadId || "";
-    setTimeout(() => markSent(leadId, sendBtn), 200);
+    const markBtn = sendBtn.closest("tr").querySelector(".js-mark-btn");
+    setTimeout(() => markSent(leadId, markBtn), 200);
     return;
   }}
 
@@ -164,6 +189,43 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying === "true") {{
+      return;
+    }}
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    const textEl = wrapper ? wrapper.querySelector(".offer-text") : null;
+    if (!textEl) return;
+
+    copyBtn.dataset.isCopying = "true";
+    const originalText = copyBtn.textContent;
+    const originalAria = copyBtn.getAttribute("aria-label") || "";
+
+    navigator.clipboard.writeText(textEl.innerText || textEl.textContent).then(() => {{
+      copyBtn.textContent = "✅";
+      copyBtn.classList.add("copy-success");
+      copyBtn.setAttribute("aria-label", "Скопировано!");
+      setTimeout(() => {{
+        copyBtn.textContent = originalText;
+        copyBtn.classList.remove("copy-success");
+        copyBtn.setAttribute("aria-label", originalAria);
+        copyBtn.dataset.isCopying = "false";
+      }}, 2000);
+    }}).catch((err) => {{
+      console.error("Failed to copy:", err);
+      copyBtn.textContent = "❌";
+      copyBtn.setAttribute("aria-label", "Ошибка копирования");
+      setTimeout(() => {{
+        copyBtn.textContent = originalText;
+        copyBtn.setAttribute("aria-label", originalAria);
+        copyBtn.dataset.isCopying = "false";
+      }}, 2000);
+    }});
+    return;
   }}
 }});
 </script>
@@ -198,6 +260,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)

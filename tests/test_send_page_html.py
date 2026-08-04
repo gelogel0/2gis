@@ -62,6 +62,45 @@ class SendPageHtmlTests(unittest.TestCase):
         self.assertEqual(safe_wa_link("https://user:pass@wa.me/7700"), "")
         self.assertEqual(safe_wa_link("https://wa.me:444/7700"), "")
 
+    def test_row_html_supports_new_ux_features(self):
+        lead = {
+            "id": "abc-123",
+            "name": "Beauty Salon",
+            "category": "Beauty",
+            "city": "Almaty",
+            "main_phone": "77071234567",
+            "generated_offer": "Nice offer content here",
+            "wa_link": "https://wa.me/77071234567?text=Nice%20offer%20content%20here",
+            "template_id": "B",
+        }
+        row = row_html(3, lead)
+        self.assertIn('class="offer-wrapper"', row)
+        self.assertIn('class="copy-btn js-copy-btn"', row)
+        self.assertIn('aria-label="Скопировать предложение"', row)
+        self.assertIn("📋", row)
+        self.assertNotIn("row-sent", row)
+        self.assertNotIn("disabled", row)
+        self.assertNotIn('style="pointer-events: none;"', row)
+
+    def test_row_html_handles_pre_sent_leads(self):
+        lead = {
+            "id": "abc-123",
+            "name": "Beauty Salon",
+            "category": "Beauty",
+            "city": "Almaty",
+            "main_phone": "77071234567",
+            "generated_offer": "Nice offer content here",
+            "wa_link": "https://wa.me/77071234567?text=Nice%20offer%20content%20here",
+            "template_id": "C",
+            "status": "sent",
+        }
+        row = row_html(4, lead)
+        self.assertIn('class="template-C row-sent"', row)
+        self.assertIn('style="pointer-events: none;"', row)
+        self.assertIn("disabled", row)
+        self.assertIn("✓ sent", row)
+        self.assertNotIn("mark sent", row)
+
 
 if __name__ == "__main__":
     unittest.main()
