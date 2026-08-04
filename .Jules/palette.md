@@ -1,0 +1,3 @@
+## 2025-08-04 - Robust Async State Resilience
+**Learning:** For asynchronous state-modifying clicks (like marking items sent), optimistic UI updates must be paired with complete failure resilience. Instantly failing API calls in testing or slow/failing requests in production can lead to desynchronized UI state if errors aren't caught. Providing automatic, graceful rollback of row opacity and action availability, with a 2-second descriptive visual/ARIA feedback loop, keeps the app highly reliable and accessible.
+**Action:** Always wrap stateful async updates in try-catch blocks that preserve previous values, immediately disable buttons to avoid race conditions, and revert DOM classes, titles, and text while restoring interactive states on exception.
