@@ -57,6 +57,61 @@ input[type="text"], input[type="search"] {
   border-radius: 6px; width: 300px;
 }
 .filter-row { margin-bottom: 16px; display: flex; gap: 8px; align-items: center; }
+.offer-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.copy-btn {
+  background: #2a313b;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 6px 10px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, background 0.1s ease;
+}
+.copy-btn:hover {
+  background: #3a414b;
+  transform: scale(1.1);
+}
+.copy-btn:active {
+  transform: scale(0.95);
+}
+.copy-btn:focus-visible {
+  outline: 2px solid #4ade80;
+  outline-offset: 2px;
+}
+.copy-success {
+  color: #4ade80 !important;
+}
+.send-btn, .mark-btn {
+  transition: transform 0.1s ease, background 0.1s ease;
+}
+.send-btn:hover {
+  transform: scale(1.1);
+}
+.send-btn:active {
+  transform: scale(0.95);
+}
+.mark-btn:hover {
+  transform: scale(1.1);
+}
+.mark-btn:active {
+  transform: scale(0.95);
+}
+.send-btn:focus-visible, .mark-btn:focus-visible, input[type="text"]:focus-visible, input[type="search"]:focus-visible {
+  outline: 2px solid #4ade80;
+  outline-offset: 2px;
+}
+.row-sent .js-send-btn {
+  pointer-events: none;
+  background: #4b5563;
+  color: #9ca3af;
+}
 </style>
 </head>
 <body>
@@ -164,6 +219,50 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying === "true") return;
+    copyBtn.dataset.isCopying = "true";
+    const row = copyBtn.closest("tr");
+    const offerTextEl = row.querySelector(".offer-text");
+    const textToCopy = offerTextEl ? offerTextEl.innerText : "";
+
+    navigator.clipboard.writeText(textToCopy).then(() => {{
+      const originalText = copyBtn.innerText;
+      const originalAria = copyBtn.getAttribute("aria-label");
+      copyBtn.innerText = "✅";
+      copyBtn.classList.add("copy-success");
+      copyBtn.setAttribute("aria-label", "Copied successfully");
+      setTimeout(() => {{
+        copyBtn.innerText = originalText;
+        copyBtn.classList.remove("copy-success");
+        if (originalAria) {{
+          copyBtn.setAttribute("aria-label", originalAria);
+        }} else {{
+          copyBtn.removeAttribute("aria-label");
+        }}
+        copyBtn.dataset.isCopying = "false";
+      }}, 2000);
+    }}).catch(err => {{
+      console.error("Clipboard copy failed:", err);
+      const originalText = copyBtn.innerText;
+      const originalAria = copyBtn.getAttribute("aria-label");
+      copyBtn.innerText = "❌";
+      copyBtn.setAttribute("aria-label", "Copy failed");
+      setTimeout(() => {{
+        copyBtn.innerText = originalText;
+        if (originalAria) {{
+          copyBtn.setAttribute("aria-label", originalAria);
+        }} else {{
+          copyBtn.removeAttribute("aria-label");
+        }}
+        copyBtn.dataset.isCopying = "false";
+      }}, 2000);
+    }});
+    return;
   }}
 }});
 </script>
@@ -198,6 +297,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
