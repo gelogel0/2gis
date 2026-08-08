@@ -52,6 +52,15 @@ tr:last-child td { border-bottom: none; }
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
+.offer-wrapper { display: flex; align-items: flex-start; gap: 8px; }
+.copy-btn {
+  background: none; border: none; cursor: pointer; padding: 4px; font-size: 14px;
+  transition: transform 0.1s ease; outline: none;
+}
+.copy-btn:hover { transform: scale(1.1); }
+.copy-btn:active { transform: scale(0.95); }
+.copy-success { color: #4ade80 !important; }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 input[type="text"], input[type="search"] {
   padding: 8px 12px; background: #1a1f29; border: 1px solid #2a313b; color: #e6e8eb;
   border-radius: 6px; width: 300px;
@@ -125,9 +134,22 @@ function applyFilter() {{
 
 async function markSent(leadId, btn) {{
   const row = btn.closest("tr");
+  if (!row) return;
   row.classList.add("row-sent");
   const sentCounter = document.getElementById("stat-sent");
   sentCounter.textContent = parseInt(sentCounter.textContent || 0) + 1;
+
+  const markBtn = row.querySelector(".js-mark-btn");
+  const sendBtn = row.querySelector(".js-send-btn");
+  if (markBtn) {{
+    markBtn.disabled = true;
+    markBtn.textContent = "✓ sent";
+  }}
+  if (sendBtn) {{
+    sendBtn.style.pointerEvents = "none";
+    sendBtn.style.opacity = "0.5";
+  }}
+
   // PATCH в Supabase через REST API (anon key + RLS policy должна разрешать)
   try {{
     const resp = await fetch(`${{SUPABASE_URL}}/rest/v1/leads?id=eq.${{encodeURIComponent(leadId)}}`, {{
@@ -142,10 +164,14 @@ async function markSent(leadId, btn) {{
     }});
     if (!resp.ok) {{
       console.error("Failed to mark sent:", await resp.text());
-      btn.textContent = "⚠ Re-mark";
-    }} else {{
-      btn.textContent = "✓ sent";
-      btn.disabled = true;
+      if (markBtn) {{
+        markBtn.disabled = false;
+        markBtn.textContent = "⚠ Re-mark";
+      }}
+      if (sendBtn) {{
+        sendBtn.style.pointerEvents = "";
+        sendBtn.style.opacity = "";
+      }}
     }}
   }} catch (e) {{
     console.error(e);
@@ -164,6 +190,42 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying) return;
+    copyBtn.dataset.isCopying = "true";
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    const textEl = wrapper ? wrapper.querySelector(".offer-text") : null;
+    const text = textEl ? textEl.innerText : "";
+
+    navigator.clipboard.writeText(text).then(() => {{
+      const originalText = copyBtn.textContent;
+      const originalLabel = copyBtn.getAttribute("aria-label");
+      copyBtn.textContent = "✅";
+      copyBtn.setAttribute("aria-label", "Copied!");
+      copyBtn.classList.add("copy-success");
+      setTimeout(() => {{
+        copyBtn.textContent = originalText;
+        copyBtn.setAttribute("aria-label", originalLabel);
+        copyBtn.classList.remove("copy-success");
+        delete copyBtn.dataset.isCopying;
+      }}, 2000);
+    }}).catch((err) => {{
+      console.error(err);
+      const originalText = copyBtn.textContent;
+      const originalLabel = copyBtn.getAttribute("aria-label");
+      copyBtn.textContent = "❌";
+      copyBtn.setAttribute("aria-label", "Copy failed");
+      setTimeout(() => {{
+        copyBtn.textContent = originalText;
+        copyBtn.setAttribute("aria-label", originalLabel);
+        delete copyBtn.dataset.isCopying;
+      }}, 2000);
+    }});
+    return;
   }}
 }});
 </script>
@@ -198,6 +260,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
