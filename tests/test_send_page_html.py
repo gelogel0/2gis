@@ -62,6 +62,25 @@ class SendPageHtmlTests(unittest.TestCase):
         self.assertEqual(safe_wa_link("https://user:pass@wa.me/7700"), "")
         self.assertEqual(safe_wa_link("https://wa.me:444/7700"), "")
 
+    def test_row_html_with_sent_status(self):
+        lead = {
+            "id": "abc-123",
+            "name": "Sent Biz",
+            "category": "Dentistry",
+            "city": "Almaty",
+            "main_phone": "+77777777777",
+            "generated_offer": "Offer text",
+            "wa_link": "https://wa.me/77777777777",
+            "template_id": "B",
+            "status": "sent",
+        }
+        row = row_html(3, lead)
+        self.assertIn('class="template-B row-sent"', row)
+        self.assertIn('pointer-events: none', row)
+        self.assertIn('disabled', row)
+        self.assertIn('✓ sent', row)
+        self.assertIn('js-copy-btn', row)
+
 
 if __name__ == "__main__":
     unittest.main()
