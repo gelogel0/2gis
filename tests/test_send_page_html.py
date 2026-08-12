@@ -29,6 +29,9 @@ class SendPageHtmlTests(unittest.TestCase):
         self.assertIn('class="send-btn js-send-btn"', row)
         self.assertIn('class="mark-btn js-mark-btn"', row)
         self.assertNotIn("markSent(", row)
+        self.assertIn('class="offer-wrapper"', row)
+        self.assertIn('class="copy-btn js-copy-btn"', row)
+        self.assertIn('aria-label="Скопировать предложение"', row)
 
     def test_row_html_rejects_non_wa_link_and_unknown_template(self):
         lead = {
