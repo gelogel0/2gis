@@ -41,17 +41,38 @@ tr:last-child td { border-bottom: none; }
   display: inline-block; padding: 8px 14px; background: #25D366; color: #0e1116;
   text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
   white-space: nowrap;
+  transition: transform 0.15s ease, background-color 0.15s ease;
 }
-.send-btn:hover { background: #1ebe5b; }
+.send-btn:hover { background: #1ebe5b; transform: scale(1.05); }
+.send-btn:active { transform: scale(0.95); }
 .mark-btn {
   margin-left: 6px; padding: 6px 10px; background: #2a313b; color: #94a3b8;
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
-.mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.mark-btn:hover { background: #3a414b; color: #e6e8eb; transform: scale(1.05); }
+.mark-btn:active { transform: scale(0.95); }
+.offer-wrapper {
+  display: flex; gap: 8px; align-items: flex-start;
+}
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
-              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; flex-grow: 1; }
+.copy-btn {
+  padding: 6px; background: #2a313b; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.copy-btn:hover { background: #3a414b; transform: scale(1.05); }
+.copy-btn:active { transform: scale(0.95); }
+.copy-success {
+  color: #4ade80 !important;
+}
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
+/* High-contrast focus visible state for keyboard accessibility */
+:focus-visible {
+  outline: 2px solid #4ade80 !important;
+  outline-offset: 2px !important;
+}
 input[type="text"], input[type="search"] {
   padding: 8px 12px; background: #1a1f29; border: 1px solid #2a313b; color: #e6e8eb;
   border-radius: 6px; width: 300px;
@@ -71,7 +92,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." aria-label="Поиск лидов" oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -128,6 +149,19 @@ async function markSent(leadId, btn) {{
   row.classList.add("row-sent");
   const sentCounter = document.getElementById("stat-sent");
   sentCounter.textContent = parseInt(sentCounter.textContent || 0) + 1;
+
+  // UX Pattern: Disable only specific buttons and links, keeping the row interactive.
+  const rowMarkBtn = row.querySelector(".js-mark-btn");
+  if (rowMarkBtn) {{
+    rowMarkBtn.disabled = true;
+    rowMarkBtn.textContent = "✓ sent";
+  }}
+  const rowSendLink = row.querySelector(".js-send-btn");
+  if (rowSendLink) {{
+    rowSendLink.style.pointerEvents = "none";
+    rowSendLink.style.opacity = "0.6";
+  }}
+
   // PATCH в Supabase через REST API (anon key + RLS policy должна разрешать)
   try {{
     const resp = await fetch(`${{SUPABASE_URL}}/rest/v1/leads?id=eq.${{encodeURIComponent(leadId)}}`, {{
@@ -141,22 +175,74 @@ async function markSent(leadId, btn) {{
       body: JSON.stringify({{ status: "sent", sent_at: new Date().toISOString() }})
     }});
     if (!resp.ok) {{
-      console.error("Failed to mark sent:", await resp.text());
-      btn.textContent = "⚠ Re-mark";
-    }} else {{
-      btn.textContent = "✓ sent";
-      btn.disabled = true;
+      const errorMsg = await resp.text();
+      console.error("Failed to mark sent:", errorMsg);
+      if (rowMarkBtn) {{
+        rowMarkBtn.textContent = "⚠ Re-mark";
+        rowMarkBtn.disabled = false;
+      }}
+      if (rowSendLink) {{
+        rowSendLink.style.pointerEvents = "";
+        rowSendLink.style.opacity = "";
+      }}
     }}
   }} catch (e) {{
     console.error(e);
+    if (rowMarkBtn) {{
+      rowMarkBtn.textContent = "⚠ Re-mark";
+      rowMarkBtn.disabled = false;
+    }}
+    if (rowSendLink) {{
+      rowSendLink.style.pointerEvents = "";
+      rowSendLink.style.opacity = "";
+    }}
   }}
+}}
+
+async function copyOffer(btn) {{
+  if (btn.dataset.isCopying === "true") return;
+  btn.dataset.isCopying = "true";
+
+  const wrapper = btn.closest(".offer-wrapper");
+  const offerTextEl = wrapper ? wrapper.querySelector(".offer-text") : null;
+  const originalLabel = btn.getAttribute("aria-label") || "Скопировать оффер";
+  const originalContent = btn.textContent;
+
+  if (!offerTextEl) {{
+    btn.dataset.isCopying = "false";
+    return;
+  }}
+
+  const textToCopy = offerTextEl.innerText;
+
+  try {{
+    await navigator.clipboard.writeText(textToCopy);
+    btn.textContent = "✅";
+    btn.classList.add("copy-success");
+    btn.setAttribute("aria-label", "Оффер скопирован!");
+  }} catch (err) {{
+    console.error("Failed to copy text: ", err);
+    btn.textContent = "❌";
+    btn.setAttribute("aria-label", "Ошибка копирования");
+  }}
+
+  setTimeout(() => {{
+    btn.textContent = originalContent;
+    btn.classList.remove("copy-success");
+    btn.setAttribute("aria-label", originalLabel);
+    btn.dataset.isCopying = "false";
+  }}, 2000);
 }}
 
 document.addEventListener("click", (event) => {{
   const sendBtn = event.target.closest(".js-send-btn");
   if (sendBtn) {{
     const leadId = sendBtn.dataset.leadId || "";
-    setTimeout(() => markSent(leadId, sendBtn), 200);
+    const row = sendBtn.closest("tr");
+    const markBtn = row ? row.querySelector(".js-mark-btn") : null;
+    if (markBtn) {{
+      setTimeout(() => markSent(leadId, markBtn), 200);
+    }}
     return;
   }}
 
@@ -164,6 +250,13 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    copyOffer(copyBtn);
+    return;
   }}
 }});
 </script>
@@ -198,6 +291,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
