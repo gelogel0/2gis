@@ -1,0 +1,3 @@
+## 2025-02-12 - Interactive processed table rows
+**Learning:** When table rows represent processed or completed items, using a filter like grayscale or disabling interaction on the entire row disables utility actions (such as copying text, selecting phone numbers, or copying offers). High-contrast text should remain readable and selectable.
+**Action:** Use moderate opacity (e.g., 0.4) for visual feedback of processed state. For interactive elements inside, use native `disabled = true` for buttons and individual `pointer-events: none` on anchor tags, while keeping other utility components (like text copy buttons) fully interactive.
