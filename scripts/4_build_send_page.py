@@ -56,6 +56,10 @@ input[type="text"], input[type="search"] {
   padding: 8px 12px; background: #1a1f29; border: 1px solid #2a313b; color: #e6e8eb;
   border-radius: 6px; width: 300px;
 }
+a:focus-visible, button:focus-visible, input:focus-visible {
+  outline: 2px solid #4ade80;
+  outline-offset: 2px;
+}
 .filter-row { margin-bottom: 16px; display: flex; gap: 8px; align-items: center; }
 </style>
 </head>
@@ -71,7 +75,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." aria-label="Поиск по имени или категории" oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -124,6 +128,9 @@ function applyFilter() {{
 }}
 
 async function markSent(leadId, btn) {{
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = "⏳ saving...";
   const row = btn.closest("tr");
   row.classList.add("row-sent");
   const sentCounter = document.getElementById("stat-sent");
@@ -143,12 +150,14 @@ async function markSent(leadId, btn) {{
     if (!resp.ok) {{
       console.error("Failed to mark sent:", await resp.text());
       btn.textContent = "⚠ Re-mark";
+      btn.disabled = false;
     }} else {{
       btn.textContent = "✓ sent";
-      btn.disabled = true;
     }}
   }} catch (e) {{
     console.error(e);
+    btn.textContent = "⚠ Re-mark";
+    btn.disabled = false;
   }}
 }}
 
@@ -198,6 +207,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
