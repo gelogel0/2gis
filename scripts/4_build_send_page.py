@@ -48,8 +48,17 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
-.offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
+.offer-wrapper { display: flex; align-items: flex-start; gap: 6px; }
+.offer-text { flex: 1; font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.copy-btn {
+  background: #2a313b; color: #94a3b8; border: none; border-radius: 6px;
+  padding: 6px 8px; font-size: 13px; cursor: pointer; transition: transform 0.1s ease, color 0.1s ease;
+  flex-shrink: 0;
+}
+.copy-btn:hover { background: #3a414b; color: #e6e8eb; transform: scale(1.05); }
+.copy-btn:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
+.copy-success { color: #4ade80 !important; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -164,6 +173,43 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying === "true") return;
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    const offerEl = wrapper ? wrapper.querySelector(".offer-text") : null;
+    if (!offerEl) return;
+
+    const textToCopy = offerEl.innerText || offerEl.textContent || "";
+    copyBtn.dataset.isCopying = "true";
+    const origText = copyBtn.textContent;
+    const origAria = copyBtn.getAttribute("aria-label");
+
+    navigator.clipboard.writeText(textToCopy).then(() => {{
+      copyBtn.textContent = "✅";
+      copyBtn.setAttribute("aria-label", "Скопировано!");
+      copyBtn.classList.add("copy-success");
+      setTimeout(() => {{
+        copyBtn.textContent = origText;
+        if (origAria) copyBtn.setAttribute("aria-label", origAria);
+        else copyBtn.removeAttribute("aria-label");
+        copyBtn.classList.remove("copy-success");
+        delete copyBtn.dataset.isCopying;
+      }}, 2000);
+    }}).catch(() => {{
+      copyBtn.textContent = "❌";
+      copyBtn.setAttribute("aria-label", "Ошибка копирования");
+      setTimeout(() => {{
+        copyBtn.textContent = origText;
+        if (origAria) copyBtn.setAttribute("aria-label", origAria);
+        else copyBtn.removeAttribute("aria-label");
+        delete copyBtn.dataset.isCopying;
+      }}, 2000);
+    }});
+    return;
   }}
 }});
 </script>
@@ -198,6 +244,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
