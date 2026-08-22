@@ -51,6 +51,11 @@ def row_html(idx: int, lead: dict) -> str:
         if wa_link
         else '<span class="tag">no phone</span>'
     )
+    copy_btn = (
+        '<button class="copy-btn js-copy-btn" aria-label="Скопировать оффер">📋</button>'
+        if offer
+        else ""
+    )
 
     return f"""
 <tr class="template-{template}" data-id="{lead_id_attr}">
@@ -59,7 +64,7 @@ def row_html(idx: int, lead: dict) -> str:
   <td>{category}</td>
   <td>{city}</td>
   <td><span class="tag">{template}</span></td>
-  <td><div class="offer-text">{offer}</div></td>
+  <td><div class="offer-wrapper"><div class="offer-text">{offer}</div>{copy_btn}</div></td>
   <td>{send_btn}<button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}">mark sent</button></td>
 </tr>
 """.strip()
