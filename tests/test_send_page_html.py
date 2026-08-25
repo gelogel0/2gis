@@ -2,10 +2,20 @@ from __future__ import annotations
 
 import unittest
 
+import importlib
+
 from src.ui.send_page import row_html, safe_wa_link
+
+build_send_page = importlib.import_module("scripts.4_build_send_page")
 
 
 class SendPageHtmlTests(unittest.TestCase):
+    def test_html_template_accessibility_features(self):
+        template = build_send_page.HTML_TEMPLATE
+        self.assertIn('aria-label="Поиск лидов"', template)
+        self.assertIn("*:focus-visible", template)
+        self.assertIn("outline: 2px solid #4ade80;", template)
+
     def test_row_html_escapes_visible_and_attribute_fields(self):
         lead = {
             "id": '" onmouseover="alert(1)',

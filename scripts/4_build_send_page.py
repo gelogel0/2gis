@@ -56,6 +56,10 @@ input[type="text"], input[type="search"] {
   padding: 8px 12px; background: #1a1f29; border: 1px solid #2a313b; color: #e6e8eb;
   border-radius: 6px; width: 300px;
 }
+*:focus-visible {
+  outline: 2px solid #4ade80;
+  outline-offset: 2px;
+}
 .filter-row { margin-bottom: 16px; display: flex; gap: 8px; align-items: center; }
 </style>
 </head>
@@ -71,7 +75,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" aria-label="Поиск лидов" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
