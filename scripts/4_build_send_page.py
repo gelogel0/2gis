@@ -37,6 +37,9 @@ tr:last-child td { border-bottom: none; }
 .template-A { background: rgba(74,222,128,0.1); }
 .template-B { background: rgba(96,165,250,0.1); }
 .template-C { background: rgba(251,191,36,0.1); }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
+.send-btn, .mark-btn { transition: background 0.15s ease, transform 0.15s ease; }
+.send-btn:active, .mark-btn:active { transform: scale(0.96); }
 .send-btn {
   display: inline-block; padding: 8px 14px; background: #25D366; color: #0e1116;
   text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
@@ -71,7 +74,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" aria-label="Поиск лидов" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
