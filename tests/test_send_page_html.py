@@ -46,6 +46,13 @@ class SendPageHtmlTests(unittest.TestCase):
         self.assertIn('<span class="tag">no phone</span>', row)
         self.assertNotIn('href="javascript:alert(1)"', row)
 
+    def test_html_template_accessibility_and_focus_styles(self):
+        import importlib
+        build_module = importlib.import_module("scripts.4_build_send_page")
+        template = build_module.HTML_TEMPLATE
+        self.assertIn('aria-label="Поиск лидов"', template)
+        self.assertIn(":focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }", template)
+
     def test_safe_wa_link_strict_validation(self):
         self.assertEqual(
             safe_wa_link("https://wa.me/77000000000?text=hello"),
