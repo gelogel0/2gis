@@ -48,8 +48,18 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
-.offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
+.offer-wrapper { display: flex; gap: 8px; align-items: flex-start; max-width: 520px; }
+.offer-text { font-size: 13px; color: #cbd5e1; flex: 1; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.copy-btn {
+  padding: 5px 8px; background: #2a313b; color: #94a3b8; border: 1px solid #3a414b;
+  border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: transform 0.1s ease, background-color 0.15s ease, color 0.15s ease;
+}
+.copy-btn:hover { background: #3a414b; color: #e6e8eb; transform: scale(1.05); }
+.copy-btn:active { transform: scale(0.95); }
+.copy-btn:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
+.copy-success { color: #4ade80 !important; border-color: rgba(74, 222, 128, 0.4) !important; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -153,6 +163,37 @@ async function markSent(leadId, btn) {{
 }}
 
 document.addEventListener("click", (event) => {{
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying === "true") return;
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    const offerEl = wrapper ? wrapper.querySelector(".offer-text") : null;
+    const textToCopy = offerEl ? offerEl.innerText.trim() : "";
+    if (!textToCopy) return;
+
+    copyBtn.dataset.isCopying = "true";
+    navigator.clipboard.writeText(textToCopy).then(function() {{
+      copyBtn.textContent = "✅ Copied";
+      copyBtn.setAttribute("aria-label", "Скопировано!");
+      copyBtn.classList.add("copy-success");
+      setTimeout(function() {{
+        copyBtn.textContent = "📋 Copy";
+        copyBtn.setAttribute("aria-label", "Скопировать текст оффера");
+        copyBtn.classList.remove("copy-success");
+        delete copyBtn.dataset.isCopying;
+      }}, 2000);
+    }}).catch(function(err) {{
+      console.error("Copy failed:", err);
+      copyBtn.textContent = "❌ Failed";
+      setTimeout(function() {{
+        copyBtn.textContent = "📋 Copy";
+        copyBtn.setAttribute("aria-label", "Скопировать текст оффера");
+        delete copyBtn.dataset.isCopying;
+      }}, 2000);
+    }});
+    return;
+  }}
+
   const sendBtn = event.target.closest(".js-send-btn");
   if (sendBtn) {{
     const leadId = sendBtn.dataset.leadId || "";
