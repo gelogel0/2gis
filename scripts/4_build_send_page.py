@@ -40,12 +40,14 @@ tr:last-child td { border-bottom: none; }
 .send-btn {
   display: inline-block; padding: 8px 14px; background: #25D366; color: #0e1116;
   text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
-  white-space: nowrap;
+  white-space: nowrap; transition: background 0.15s ease, transform 0.1s ease;
 }
 .send-btn:hover { background: #1ebe5b; }
+.send-btn:active, .mark-btn:active { transform: scale(0.97); }
 .mark-btn {
   margin-left: 6px; padding: 6px 10px; background: #2a313b; color: #94a3b8;
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
@@ -56,6 +58,7 @@ input[type="text"], input[type="search"] {
   padding: 8px 12px; background: #1a1f29; border: 1px solid #2a313b; color: #e6e8eb;
   border-radius: 6px; width: 300px;
 }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 .filter-row { margin-bottom: 16px; display: flex; gap: 8px; align-items: center; }
 </style>
 </head>
@@ -71,7 +74,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" aria-label="Поиск лидов" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
