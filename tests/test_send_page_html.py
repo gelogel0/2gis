@@ -62,6 +62,15 @@ class SendPageHtmlTests(unittest.TestCase):
         self.assertEqual(safe_wa_link("https://user:pass@wa.me/7700"), "")
         self.assertEqual(safe_wa_link("https://wa.me:444/7700"), "")
 
+    def test_html_template_accessibility_and_focus_styles(self):
+        import importlib
+        module = importlib.import_module("scripts.4_build_send_page")
+        html_template = module.HTML_TEMPLATE
+
+        self.assertIn('aria-label="Поиск лидов"', html_template)
+        self.assertIn("a:focus-visible, button:focus-visible, input:focus-visible", html_template)
+        self.assertIn("outline: 2px solid #4ade80;", html_template)
+
 
 if __name__ == "__main__":
     unittest.main()
