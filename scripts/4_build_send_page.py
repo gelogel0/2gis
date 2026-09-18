@@ -26,6 +26,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 * { box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
        margin: 0; padding: 24px; background: #0e1116; color: #e6e8eb; }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 h1 { font-size: 22px; margin: 0 0 16px; }
 .stats { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
 .stat { background: #1a1f29; padding: 10px 14px; border-radius: 8px; font-size: 13px; }
@@ -71,7 +72,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." aria-label="Поиск лидов" oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
