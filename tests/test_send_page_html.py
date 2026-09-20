@@ -28,6 +28,8 @@ class SendPageHtmlTests(unittest.TestCase):
         self.assertNotIn("<script>x</script>", row)
         self.assertIn('class="send-btn js-send-btn"', row)
         self.assertIn('class="mark-btn js-mark-btn"', row)
+        self.assertIn('aria-label="Отправить в WhatsApp: &lt;b&gt;Bad&lt;/b&gt;"', row)
+        self.assertIn('aria-label="Пометить отправленным: &lt;b&gt;Bad&lt;/b&gt;"', row)
         self.assertNotIn("markSent(", row)
 
     def test_row_html_rejects_non_wa_link_and_unknown_template(self):
