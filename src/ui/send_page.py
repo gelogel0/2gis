@@ -45,9 +45,11 @@ def row_html(idx: int, lead: dict) -> str:
     lead_id_attr = escape(lead_id, quote=True)
     phone = escape(lead.get("main_phone", "-") or "-")
 
+    name_attr = escape(lead.get("name") or "", quote=True)
+
     send_btn = (
         f'<a class="send-btn js-send-btn" href="{wa_link}" target="_blank" '
-        f'data-lead-id="{lead_id_attr}">📨 Send WA</a>'
+        f'data-lead-id="{lead_id_attr}" aria-label="Отправить в WhatsApp: {name_attr}">📨 Send WA</a>'
         if wa_link
         else '<span class="tag">no phone</span>'
     )
@@ -60,6 +62,6 @@ def row_html(idx: int, lead: dict) -> str:
   <td>{city}</td>
   <td><span class="tag">{template}</span></td>
   <td><div class="offer-text">{offer}</div></td>
-  <td>{send_btn}<button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}">mark sent</button></td>
+  <td>{send_btn}<button class="mark-btn js-mark-btn" data-lead-id="{lead_id_attr}" aria-label="Пометить отправленным: {name_attr}">mark sent</button></td>
 </tr>
 """.strip()
