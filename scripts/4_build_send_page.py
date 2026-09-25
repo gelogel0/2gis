@@ -48,6 +48,9 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.mark-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
+.no-results { text-align: center; padding: 24px; color: #94a3b8; font-size: 14px; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
@@ -71,7 +74,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." aria-label="Поиск лидов" oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -89,6 +92,7 @@ input[type="text"], input[type="search"] {
 </thead>
 <tbody>
 {rows}
+<tr id="no-results-row" style="display:none;"><td colspan="7" class="no-results">Лиды не найдены</td></tr>
 </tbody>
 </table>
 
@@ -113,14 +117,18 @@ updateStats();
 function applyFilter() {{
   const q = (document.getElementById("search").value || "").toLowerCase();
   const hideSent = document.getElementById("filter-hide-sent").checked;
-  const rows = document.querySelectorAll("tbody tr");
+  const rows = document.querySelectorAll("tbody tr:not(#no-results-row)");
+  let visibleCount = 0;
   rows.forEach(r => {{
     const txt = r.textContent.toLowerCase();
     const isSent = r.classList.contains("row-sent");
     let visible = txt.includes(q);
     if (hideSent && isSent) visible = false;
     r.style.display = visible ? "" : "none";
+    if (visible) visibleCount++;
   }});
+  const noResults = document.getElementById("no-results-row");
+  if (noResults) noResults.style.display = visibleCount === 0 ? "" : "none";
 }}
 
 async function markSent(leadId, btn) {{
@@ -198,6 +206,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
