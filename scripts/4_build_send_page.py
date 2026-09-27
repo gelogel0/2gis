@@ -26,6 +26,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 * { box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
        margin: 0; padding: 24px; background: #0e1116; color: #e6e8eb; }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 h1 { font-size: 22px; margin: 0 0 16px; }
 .stats { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
 .stat { background: #1a1f29; padding: 10px 14px; border-radius: 8px; font-size: 13px; }
@@ -40,14 +41,17 @@ tr:last-child td { border-bottom: none; }
 .send-btn {
   display: inline-block; padding: 8px 14px; background: #25D366; color: #0e1116;
   text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
-  white-space: nowrap;
+  white-space: nowrap; transition: background 0.15s ease, transform 0.1s ease;
 }
 .send-btn:hover { background: #1ebe5b; }
+.send-btn:active { transform: scale(0.97); }
 .mark-btn {
   margin-left: 6px; padding: 6px 10px; background: #2a313b; color: #94a3b8;
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.mark-btn:active { transform: scale(0.97); }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
@@ -71,7 +75,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." aria-label="Поиск лидов" oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
