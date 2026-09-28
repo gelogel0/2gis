@@ -48,8 +48,18 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.offer-wrapper { display: flex; align-items: flex-start; gap: 6px; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
-              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; flex-grow: 1; }
+.copy-btn {
+  background: #2a313b; color: #94a3b8; border: none; border-radius: 6px;
+  padding: 6px 8px; font-size: 13px; cursor: pointer; flex-shrink: 0;
+  transition: transform 0.1s ease, background-color 0.2s ease;
+}
+.copy-btn:hover { background: #3a414b; color: #e6e8eb; transform: translateY(-1px); }
+.copy-btn:active { transform: translateY(0); }
+.copy-btn:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
+.copy-success { color: #4ade80 !important; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -153,6 +163,36 @@ async function markSent(leadId, btn) {{
 }}
 
 document.addEventListener("click", (event) => {{
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    const offerText = wrapper ? wrapper.querySelector(".offer-text") : null;
+    if (offerText && !copyBtn.dataset.isCopying) {{
+      copyBtn.dataset.isCopying = "true";
+      const originalText = copyBtn.textContent;
+      const textToCopy = offerText.innerText || offerText.textContent;
+      navigator.clipboard.writeText(textToCopy).then(() => {{
+        copyBtn.textContent = "✅";
+        copyBtn.classList.add("copy-success");
+        copyBtn.setAttribute("aria-label", "Скопировано!");
+        setTimeout(() => {{
+          copyBtn.textContent = originalText;
+          copyBtn.classList.remove("copy-success");
+          copyBtn.setAttribute("aria-label", "Копировать текст оффера");
+          delete copyBtn.dataset.isCopying;
+        }}, 2000);
+      }}).catch(err => {{
+        console.error("Failed to copy text: ", err);
+        copyBtn.textContent = "❌";
+        setTimeout(() => {{
+          copyBtn.textContent = originalText;
+          delete copyBtn.dataset.isCopying;
+        }}, 2000);
+      }});
+    }}
+    return;
+  }}
+
   const sendBtn = event.target.closest(".js-send-btn");
   if (sendBtn) {{
     const leadId = sendBtn.dataset.leadId || "";
