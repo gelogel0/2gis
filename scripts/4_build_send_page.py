@@ -52,6 +52,8 @@ tr:last-child td { border-bottom: none; }
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
+.row-sent .send-btn { pointer-events: none; opacity: 0.6; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 input[type="text"], input[type="search"] {
   padding: 8px 12px; background: #1a1f29; border: 1px solid #2a313b; color: #e6e8eb;
   border-radius: 6px; width: 300px;
@@ -71,7 +73,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" aria-label="Поиск лидов" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -126,6 +128,11 @@ function applyFilter() {{
 async function markSent(leadId, btn) {{
   const row = btn.closest("tr");
   row.classList.add("row-sent");
+  const sendLink = row.querySelector(".js-send-btn");
+  if (sendLink) {{
+    sendLink.setAttribute("aria-disabled", "true");
+    sendLink.setAttribute("tabindex", "-1");
+  }}
   const sentCounter = document.getElementById("stat-sent");
   sentCounter.textContent = parseInt(sentCounter.textContent || 0) + 1;
   // PATCH в Supabase через REST API (anon key + RLS policy должна разрешать)
@@ -198,6 +205,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
