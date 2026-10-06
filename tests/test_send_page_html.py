@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import unittest
 
+from importlib import import_module
+
 from src.ui.send_page import row_html, safe_wa_link
+
+build_send_page = import_module("scripts.4_build_send_page")
 
 
 class SendPageHtmlTests(unittest.TestCase):
@@ -61,6 +65,12 @@ class SendPageHtmlTests(unittest.TestCase):
         self.assertEqual(safe_wa_link("https://wa.me/not-a-phone"), "")
         self.assertEqual(safe_wa_link("https://user:pass@wa.me/7700"), "")
         self.assertEqual(safe_wa_link("https://wa.me:444/7700"), "")
+
+    def test_html_template_accessibility_attributes(self):
+        template = build_send_page.HTML_TEMPLATE
+        self.assertIn('aria-label="Поиск лидов"', template)
+        self.assertIn(":focus-visible", template)
+        self.assertIn("outline: 2px solid #4ade80", template)
 
 
 if __name__ == "__main__":
