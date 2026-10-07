@@ -48,14 +48,24 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.offer-wrapper { display: flex; align-items: flex-start; gap: 6px; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
-              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; flex-grow: 1; }
+.copy-btn {
+  background: #2a313b; border: none; color: #94a3b8; border-radius: 4px;
+  padding: 4px 6px; font-size: 12px; cursor: pointer; transition: transform 0.1s ease, background 0.15s ease;
+  flex-shrink: 0;
+}
+.copy-btn:hover { background: #3a414b; color: #e6e8eb; transform: translateY(-1px); }
+.copy-btn:active { transform: translateY(0); }
+.copy-success { color: #4ade80 !important; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
   padding: 8px 12px; background: #1a1f29; border: 1px solid #2a313b; color: #e6e8eb;
   border-radius: 6px; width: 300px;
 }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 .filter-row { margin-bottom: 16px; display: flex; gap: 8px; align-items: center; }
 </style>
 </head>
@@ -71,7 +81,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" aria-label="Поиск лидов" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -123,6 +133,36 @@ function applyFilter() {{
   }});
 }}
 
+async function copyOffer(btn) {{
+  if (btn.dataset.isCopying === "true") return;
+  const wrapper = btn.closest(".offer-wrapper");
+  const textEl = wrapper ? wrapper.querySelector(".offer-text") : null;
+  if (!textEl) return;
+  btn.dataset.isCopying = "true";
+  const text = textEl.innerText || textEl.textContent || "";
+  try {{
+    await navigator.clipboard.writeText(text);
+    btn.textContent = "✅";
+    btn.classList.add("copy-success");
+    btn.setAttribute("aria-label", "Скопировано!");
+    setTimeout(() => {{
+      btn.textContent = "📋";
+      btn.classList.remove("copy-success");
+      btn.setAttribute("aria-label", "Копировать оффер");
+      delete btn.dataset.isCopying;
+    }}, 2000);
+  }} catch (e) {{
+    console.error(e);
+    btn.textContent = "❌";
+    btn.setAttribute("aria-label", "Ошибка копирования");
+    setTimeout(() => {{
+      btn.textContent = "📋";
+      btn.setAttribute("aria-label", "Копировать оффер");
+      delete btn.dataset.isCopying;
+    }}, 2000);
+  }}
+}}
+
 async function markSent(leadId, btn) {{
   const row = btn.closest("tr");
   row.classList.add("row-sent");
@@ -153,6 +193,12 @@ async function markSent(leadId, btn) {{
 }}
 
 document.addEventListener("click", (event) => {{
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    copyOffer(copyBtn);
+    return;
+  }}
+
   const sendBtn = event.target.closest(".js-send-btn");
   if (sendBtn) {{
     const leadId = sendBtn.dataset.leadId || "";
@@ -164,6 +210,7 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
   }}
 }});
 </script>
