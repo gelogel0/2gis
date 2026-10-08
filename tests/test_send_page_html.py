@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import unittest
 
 from src.ui.send_page import row_html, safe_wa_link
@@ -45,6 +46,12 @@ class SendPageHtmlTests(unittest.TestCase):
         self.assertIn('class="template-?"', row)
         self.assertIn('<span class="tag">no phone</span>', row)
         self.assertNotIn('href="javascript:alert(1)"', row)
+
+    def test_html_template_accessibility_and_focus_styles(self):
+        build_module = importlib.import_module("scripts.4_build_send_page")
+        template = build_module.HTML_TEMPLATE
+        self.assertIn(':focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }', template)
+        self.assertIn('aria-label="Поиск по имени или категории"', template)
 
     def test_safe_wa_link_strict_validation(self):
         self.assertEqual(
