@@ -26,6 +26,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 * { box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
        margin: 0; padding: 24px; background: #0e1116; color: #e6e8eb; }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 h1 { font-size: 22px; margin: 0 0 16px; }
 .stats { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
 .stat { background: #1a1f29; padding: 10px 14px; border-radius: 8px; font-size: 13px; }
@@ -37,6 +38,12 @@ tr:last-child td { border-bottom: none; }
 .template-A { background: rgba(74,222,128,0.1); }
 .template-B { background: rgba(96,165,250,0.1); }
 .template-C { background: rgba(251,191,36,0.1); }
+.send-btn, .mark-btn {
+  transition: transform 0.1s ease, background-color 0.15s ease;
+}
+.send-btn:active, .mark-btn:active {
+  transform: scale(0.97);
+}
 .send-btn {
   display: inline-block; padding: 8px 14px; background: #25D366; color: #0e1116;
   text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
@@ -71,7 +78,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." aria-label="Поиск лидов" oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
