@@ -24,6 +24,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <title>LeadHunter — Send Queue</title>
 <style>
 * { box-sizing: border-box; }
+*:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
        margin: 0; padding: 24px; background: #0e1116; color: #e6e8eb; }
 h1 { font-size: 22px; margin: 0 0 16px; }
@@ -71,7 +72,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." aria-label="Поиск лидов" oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
