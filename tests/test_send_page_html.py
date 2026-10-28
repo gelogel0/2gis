@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import unittest
 
 from src.ui.send_page import row_html, safe_wa_link
@@ -61,6 +62,13 @@ class SendPageHtmlTests(unittest.TestCase):
         self.assertEqual(safe_wa_link("https://wa.me/not-a-phone"), "")
         self.assertEqual(safe_wa_link("https://user:pass@wa.me/7700"), "")
         self.assertEqual(safe_wa_link("https://wa.me:444/7700"), "")
+
+    def test_build_send_page_html_template_accessibility_and_styles(self):
+        build_module = importlib.import_module("scripts.4_build_send_page")
+        html_template = getattr(build_module, "HTML_TEMPLATE", "")
+        self.assertIn('aria-label="Поиск лидов"', html_template)
+        self.assertIn(":focus-visible", html_template)
+        self.assertIn(".mark-btn:disabled", html_template)
 
 
 if __name__ == "__main__":
