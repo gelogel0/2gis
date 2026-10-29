@@ -37,21 +37,27 @@ tr:last-child td { border-bottom: none; }
 .template-A { background: rgba(74,222,128,0.1); }
 .template-B { background: rgba(96,165,250,0.1); }
 .template-C { background: rgba(251,191,36,0.1); }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 .send-btn {
   display: inline-block; padding: 8px 14px; background: #25D366; color: #0e1116;
   text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
-  white-space: nowrap;
+  white-space: nowrap; transition: transform 0.15s ease, background 0.15s ease;
 }
-.send-btn:hover { background: #1ebe5b; }
+.send-btn:hover { background: #1ebe5b; transform: translateY(-1px); }
+.send-btn:active { transform: translateY(0); }
 .mark-btn {
   margin-left: 6px; padding: 6px 10px; background: #2a313b; color: #94a3b8;
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
-.mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.mark-btn:hover:not(:disabled) { background: #3a414b; color: #e6e8eb; transform: translateY(-1px); }
+.mark-btn:active:not(:disabled) { transform: translateY(0); }
+.mark-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
+.row-sent .send-btn { opacity: 0.5; pointer-events: none; }
 input[type="text"], input[type="search"] {
   padding: 8px 12px; background: #1a1f29; border: 1px solid #2a313b; color: #e6e8eb;
   border-radius: 6px; width: 300px;
@@ -71,7 +77,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." aria-label="Поиск лидов" oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -123,11 +129,12 @@ function applyFilter() {{
   }});
 }}
 
-async function markSent(leadId, btn) {{
-  const row = btn.closest("tr");
-  row.classList.add("row-sent");
+async function markSent(leadId, triggerEl) {{
+  const row = triggerEl ? triggerEl.closest("tr") : null;
+  if (row) row.classList.add("row-sent");
+  const markBtn = row ? (row.querySelector(".js-mark-btn") || row.querySelector(".mark-btn")) : null;
   const sentCounter = document.getElementById("stat-sent");
-  sentCounter.textContent = parseInt(sentCounter.textContent || 0) + 1;
+  if (sentCounter) sentCounter.textContent = parseInt(sentCounter.textContent || 0) + 1;
   // PATCH в Supabase через REST API (anon key + RLS policy должна разрешать)
   try {{
     const resp = await fetch(`${{SUPABASE_URL}}/rest/v1/leads?id=eq.${{encodeURIComponent(leadId)}}`, {{
@@ -142,10 +149,12 @@ async function markSent(leadId, btn) {{
     }});
     if (!resp.ok) {{
       console.error("Failed to mark sent:", await resp.text());
-      btn.textContent = "⚠ Re-mark";
+      if (markBtn) markBtn.textContent = "⚠ Re-mark";
     }} else {{
-      btn.textContent = "✓ sent";
-      btn.disabled = true;
+      if (markBtn) {{
+        markBtn.textContent = "✓ sent";
+        markBtn.disabled = true;
+      }}
     }}
   }} catch (e) {{
     console.error(e);
@@ -194,6 +203,8 @@ def main(
 
     html = (
         HTML_TEMPLATE
+        .replace("{{", "{")
+        .replace("}}", "}")
         .replace("{count}", str(len(leads)))
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
