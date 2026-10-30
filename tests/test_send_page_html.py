@@ -63,5 +63,15 @@ class SendPageHtmlTests(unittest.TestCase):
         self.assertEqual(safe_wa_link("https://wa.me:444/7700"), "")
 
 
+    def test_html_template_accessibility(self):
+        import importlib
+        build_module = importlib.import_module("scripts.4_build_send_page")
+        template = build_module.HTML_TEMPLATE
+
+        self.assertIn('aria-label="Поиск лидов"', template)
+        self.assertIn(":focus-visible", template)
+        self.assertIn("outline: 2px solid #4ade80;", template)
+
+
 if __name__ == "__main__":
     unittest.main()
