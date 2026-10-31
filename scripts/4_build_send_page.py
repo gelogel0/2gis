@@ -48,8 +48,18 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.offer-wrapper { display: flex; align-items: flex-start; gap: 6px; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
-              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+              max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; flex: 1; }
+.copy-btn {
+  background: #232a36; border: 1px solid #2a313b; color: #94a3b8; border-radius: 6px;
+  padding: 6px 8px; font-size: 13px; cursor: pointer; transition: transform 0.1s, background 0.15s;
+  flex-shrink: 0;
+}
+.copy-btn:hover { background: #2f3847; color: #e6e8eb; transform: translateY(-1px); }
+.copy-btn:active { transform: scale(0.96); }
+.copy-success { color: #4ade80 !important; }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -71,7 +81,7 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" aria-label="Поиск лидов" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
 </div>
 
@@ -153,6 +163,36 @@ async function markSent(leadId, btn) {{
 }}
 
 document.addEventListener("click", (event) => {{
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying === "true") return;
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    const textEl = wrapper ? wrapper.querySelector(".offer-text") : null;
+    const text = textEl ? textEl.innerText.trim() : "";
+    if (!text) return;
+
+    copyBtn.dataset.isCopying = "true";
+    navigator.clipboard.writeText(text).then(() => {{
+      copyBtn.textContent = "✅";
+      copyBtn.classList.add("copy-success");
+      copyBtn.setAttribute("aria-label", "Скопировано!");
+      setTimeout(() => {{
+        copyBtn.textContent = "📋";
+        copyBtn.classList.remove("copy-success");
+        copyBtn.setAttribute("aria-label", "Скопировать оффер");
+        copyBtn.dataset.isCopying = "false";
+      }}, 2000);
+    }}).catch(() => {{
+      copyBtn.textContent = "❌";
+      setTimeout(() => {{
+        copyBtn.textContent = "📋";
+        copyBtn.setAttribute("aria-label", "Скопировать оффер");
+        copyBtn.dataset.isCopying = "false";
+      }}, 2000);
+    }});
+    return;
+  }}
+
   const sendBtn = event.target.closest(".js-send-btn");
   if (sendBtn) {{
     const leadId = sendBtn.dataset.leadId || "";
