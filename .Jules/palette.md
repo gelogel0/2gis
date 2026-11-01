@@ -1,0 +1,5 @@
+# Palette's UX Journal
+
+## 2026-05-03 - Accessible One-Click Clipboard Copy Feedback in Send Queues
+**Learning:** In fast-paced outreach workflows, users frequently need to copy generated message offers manually (for backup channels or when desktop redirects fail). Simply relying on native clipboard copy without visual and screen reader status updates creates uncertainty. Providing an inline button with clear `aria-label`, tactile hover/active transforms, and an instantaneous switch to "✅" with an updated `aria-label="Скопировано в буфер"` (guarded against rapid-click races with a dataset flag) delivers immediate confirmation and ensures non-visual users receive equivalent feedback.
+**Action:** When adding copy actions next to text previews, wrap them in a flex container (`display: flex; align-items: flex-start`), maintain accessible ARIA labels in the target language (Russian/Kazakh for CIS lead generation), use `:focus-visible` ring indicators, and restore the default state after 2000ms.

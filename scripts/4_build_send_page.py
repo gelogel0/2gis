@@ -48,8 +48,17 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
-.offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
+.offer-wrapper { display: flex; align-items: flex-start; gap: 6px; }
+.offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; flex: 1; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.copy-btn {
+  padding: 6px 8px; background: #2a313b; border: 1px solid #3a414b; border-radius: 6px;
+  cursor: pointer; font-size: 13px; line-height: 1; transition: transform 0.1s ease, background 0.15s ease;
+}
+.copy-btn:hover { background: #3a414b; transform: translateY(-1px); }
+.copy-btn:active { transform: translateY(0); }
+.copy-btn:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
+.copy-btn.copy-success { background: rgba(74, 222, 128, 0.2); border-color: #4ade80; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -153,6 +162,33 @@ async function markSent(leadId, btn) {{
 }}
 
 document.addEventListener("click", (event) => {{
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying) return;
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    const text = wrapper ? (wrapper.querySelector(".offer-text")?.innerText || "") : "";
+    if (!text) return;
+    copyBtn.dataset.isCopying = "true";
+    navigator.clipboard.writeText(text).then(() => {{
+      copyBtn.textContent = "✅";
+      copyBtn.classList.add("copy-success");
+      copyBtn.setAttribute("aria-label", "Скопировано в буфер");
+      setTimeout(() => {{
+        copyBtn.textContent = "📋";
+        copyBtn.classList.remove("copy-success");
+        copyBtn.setAttribute("aria-label", "Скопировать оффер");
+        delete copyBtn.dataset.isCopying;
+      }}, 2000);
+    }}).catch(() => {{
+      copyBtn.textContent = "❌";
+      setTimeout(() => {{
+        copyBtn.textContent = "📋";
+        delete copyBtn.dataset.isCopying;
+      }}, 2000);
+    }});
+    return;
+  }}
+
   const sendBtn = event.target.closest(".js-send-btn");
   if (sendBtn) {{
     const leadId = sendBtn.dataset.leadId || "";
@@ -198,6 +234,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
