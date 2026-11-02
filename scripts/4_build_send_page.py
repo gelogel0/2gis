@@ -37,15 +37,18 @@ tr:last-child td { border-bottom: none; }
 .template-A { background: rgba(74,222,128,0.1); }
 .template-B { background: rgba(96,165,250,0.1); }
 .template-C { background: rgba(251,191,36,0.1); }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 .send-btn {
   display: inline-block; padding: 8px 14px; background: #25D366; color: #0e1116;
   text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;
-  white-space: nowrap;
+  white-space: nowrap; transition: background 0.15s ease, transform 0.1s ease;
 }
 .send-btn:hover { background: #1ebe5b; }
+.send-btn:active, .mark-btn:active { transform: scale(0.98); }
 .mark-btn {
   margin-left: 6px; padding: 6px 10px; background: #2a313b; color: #94a3b8;
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
@@ -71,8 +74,9 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" placeholder="Поиск по имени / категории..." aria-label="Поиск лидов" oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
+  <span id="filter-count" class="tag" aria-live="polite">Найдено: {count}</span>
 </div>
 
 <table id="leads-table">
@@ -114,13 +118,17 @@ function applyFilter() {{
   const q = (document.getElementById("search").value || "").toLowerCase();
   const hideSent = document.getElementById("filter-hide-sent").checked;
   const rows = document.querySelectorAll("tbody tr");
+  let visibleCount = 0;
   rows.forEach(r => {{
     const txt = r.textContent.toLowerCase();
     const isSent = r.classList.contains("row-sent");
     let visible = txt.includes(q);
     if (hideSent && isSent) visible = false;
     r.style.display = visible ? "" : "none";
+    if (visible) visibleCount++;
   }});
+  const countEl = document.getElementById("filter-count");
+  if (countEl) countEl.textContent = `Найдено: ${{visibleCount}}`;
 }}
 
 async function markSent(leadId, btn) {{
@@ -198,6 +206,8 @@ def main(
         .replace("{rows}", rows_html)
         .replace("{supabase_url}", settings.supabase_url)
         .replace("{supabase_anon_key}", settings.supabase_anon_key)
+        .replace("{{", "{")
+        .replace("}}", "}")
     )
 
     output.parent.mkdir(parents=True, exist_ok=True)
