@@ -48,8 +48,18 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
-.offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
+.offer-wrapper { display: flex; flex-direction: column; gap: 4px; max-width: 480px; }
+.offer-text { font-size: 13px; color: #cbd5e1; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.copy-btn {
+  align-self: flex-start; padding: 4px 8px; background: #232a36; color: #94a3b8;
+  border: 1px solid #2a313b; border-radius: 4px; font-size: 11px; cursor: pointer;
+  transition: transform 0.1s ease, color 0.1s ease;
+}
+.copy-btn:hover { background: #2a313b; color: #e6e8eb; transform: translateY(-1px); }
+.copy-btn:active { transform: translateY(0); }
+.copy-success { color: #4ade80 !important; border-color: #4ade80 !important; }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -71,8 +81,9 @@ input[type="text"], input[type="search"] {
 </div>
 
 <div class="filter-row">
-  <input type="search" id="search" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
+  <input type="search" id="search" aria-label="Поиск лидов" placeholder="Поиск по имени / категории..." oninput="applyFilter()">
   <label><input type="checkbox" id="filter-hide-sent" onchange="applyFilter()"> скрыть отправленные</label>
+  <span id="filter-count" class="tag" aria-live="polite">{count} показано</span>
 </div>
 
 <table id="leads-table">
@@ -114,13 +125,19 @@ function applyFilter() {{
   const q = (document.getElementById("search").value || "").toLowerCase();
   const hideSent = document.getElementById("filter-hide-sent").checked;
   const rows = document.querySelectorAll("tbody tr");
+  let visibleCount = 0;
   rows.forEach(r => {{
     const txt = r.textContent.toLowerCase();
     const isSent = r.classList.contains("row-sent");
     let visible = txt.includes(q);
     if (hideSent && isSent) visible = false;
     r.style.display = visible ? "" : "none";
+    if (visible) visibleCount++;
   }});
+  const countEl = document.getElementById("filter-count");
+  if (countEl) {{
+    countEl.textContent = `${{visibleCount}} показано`;
+  }}
 }}
 
 async function markSent(leadId, btn) {{
@@ -164,6 +181,34 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying === "true") return;
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    const textEl = wrapper ? wrapper.querySelector(".offer-text") : null;
+    const text = textEl ? textEl.innerText.trim() : "";
+    if (!text) return;
+
+    copyBtn.dataset.isCopying = "true";
+    navigator.clipboard.writeText(text).then(() => {{
+      const originalText = copyBtn.textContent;
+      copyBtn.textContent = "✓ Скопировано";
+      copyBtn.classList.add("copy-success");
+      copyBtn.setAttribute("aria-label", "Скопировано в буфер");
+      setTimeout(() => {{
+        copyBtn.textContent = originalText;
+        copyBtn.classList.remove("copy-success");
+        copyBtn.setAttribute("aria-label", "Копировать сообщение");
+        copyBtn.dataset.isCopying = "false";
+      }}, 2000);
+    }}).catch(err => {{
+      console.error("Copy failed", err);
+      copyBtn.dataset.isCopying = "false";
+    }});
+    return;
   }}
 }});
 </script>
