@@ -48,8 +48,16 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
-.offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
+.offer-wrapper { display: flex; flex-direction: column; gap: 6px; max-width: 480px; }
+.offer-text { font-size: 13px; color: #cbd5e1; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.copy-btn {
+  align-self: flex-start; padding: 4px 8px; background: #2a313b; color: #94a3b8;
+  border: none; border-radius: 4px; font-size: 11px; cursor: pointer; transition: transform 0.1s ease;
+}
+.copy-btn:hover { background: #3a414b; color: #e6e8eb; transform: translateY(-1px); }
+.copy-success { color: #4ade80 !important; }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
 input[type="text"], input[type="search"] {
@@ -164,6 +172,31 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
+  }}
+
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying === "true") return;
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    const text = wrapper ? (wrapper.querySelector(".offer-text")?.innerText || "") : "";
+    if (!text) return;
+    copyBtn.dataset.isCopying = "true";
+    navigator.clipboard.writeText(text).then(() => {{
+      copyBtn.textContent = "✅ Copied!";
+      copyBtn.classList.add("copy-success");
+      copyBtn.setAttribute("aria-label", "Copied offer text");
+    }}).catch(() => {{
+      copyBtn.textContent = "❌ Failed";
+    }}).finally(() => {{
+      setTimeout(() => {{
+        copyBtn.textContent = "📋 Copy";
+        copyBtn.classList.remove("copy-success");
+        copyBtn.setAttribute("aria-label", "Copy offer text");
+        delete copyBtn.dataset.isCopying;
+      }}, 2000);
+    }});
+    return;
   }}
 }});
 </script>

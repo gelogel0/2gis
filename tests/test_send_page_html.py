@@ -26,9 +26,26 @@ class SendPageHtmlTests(unittest.TestCase):
         self.assertIn("data-id=\"&quot; onmouseover=&quot;alert(1)\"", row)
         self.assertIn("?text=&quot;x&quot;&amp;a=&lt;b&gt;", row)
         self.assertNotIn("<script>x</script>", row)
+        self.assertIn('class="offer-wrapper"', row)
+        self.assertIn('class="copy-btn js-copy-btn"', row)
+        self.assertIn('aria-label="Copy offer text"', row)
         self.assertIn('class="send-btn js-send-btn"', row)
         self.assertIn('class="mark-btn js-mark-btn"', row)
         self.assertNotIn("markSent(", row)
+
+    def test_row_html_without_offer_omits_copy_button(self):
+        lead = {
+            "id": "123",
+            "name": "Test",
+            "category": "Test",
+            "city": "Almaty",
+            "main_phone": "+77000000000",
+            "generated_offer": "",
+            "wa_link": "https://wa.me/77000000000",
+            "template_id": "A",
+        }
+        row = row_html(1, lead)
+        self.assertNotIn("js-copy-btn", row)
 
     def test_row_html_rejects_non_wa_link_and_unknown_template(self):
         lead = {
