@@ -48,10 +48,20 @@ tr:last-child td { border-bottom: none; }
   border: none; border-radius: 6px; font-size: 12px; cursor: pointer;
 }
 .mark-btn:hover { background: #3a414b; color: #e6e8eb; }
+.offer-wrapper { display: flex; flex-direction: column; gap: 6px; }
 .offer-text { font-size: 13px; color: #cbd5e1; max-width: 480px; white-space: pre-wrap;
               max-height: 80px; overflow-y: auto; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 4px; }
+.copy-btn {
+  align-self: flex-start; padding: 4px 8px; background: #232a36; color: #94a3b8;
+  border: 1px solid #2a313b; border-radius: 4px; font-size: 11px; cursor: pointer;
+  transition: transform 0.1s ease, color 0.15s ease;
+}
+.copy-btn:hover { background: #2a313b; color: #e6e8eb; transform: translateY(-1px); }
+.copy-btn:active { transform: translateY(0); }
+.copy-success { color: #4ade80 !important; border-color: rgba(74,222,128,0.4) !important; }
 .tag { padding: 2px 6px; background: #2a313b; border-radius: 4px; font-size: 11px; color: #94a3b8; }
 .row-sent { opacity: 0.4; }
+:focus-visible { outline: 2px solid #4ade80; outline-offset: 2px; }
 input[type="text"], input[type="search"] {
   padding: 8px 12px; background: #1a1f29; border: 1px solid #2a313b; color: #e6e8eb;
   border-radius: 6px; width: 300px;
@@ -152,7 +162,37 @@ async function markSent(leadId, btn) {{
   }}
 }}
 
-document.addEventListener("click", (event) => {{
+document.addEventListener("click", async (event) => {{
+  const copyBtn = event.target.closest(".js-copy-btn");
+  if (copyBtn) {{
+    if (copyBtn.dataset.isCopying === "true") return;
+    const wrapper = copyBtn.closest(".offer-wrapper");
+    const textEl = wrapper ? wrapper.querySelector(".offer-text") : null;
+    const text = textEl ? textEl.innerText.trim() : "";
+    if (!text) return;
+
+    copyBtn.dataset.isCopying = "true";
+    const origText = copyBtn.textContent;
+    const origLabel = copyBtn.getAttribute("aria-label") || "";
+    try {{
+      await navigator.clipboard.writeText(text);
+      copyBtn.textContent = "✅ Скопировано";
+      copyBtn.classList.add("copy-success");
+      copyBtn.setAttribute("aria-label", "Оффер скопирован");
+    }} catch (err) {{
+      copyBtn.textContent = "❌ Ошибка";
+      copyBtn.setAttribute("aria-label", "Не удалось скопировать");
+    }} finally {{
+      setTimeout(() => {{
+        copyBtn.textContent = origText;
+        copyBtn.classList.remove("copy-success");
+        copyBtn.setAttribute("aria-label", origLabel);
+        delete copyBtn.dataset.isCopying;
+      }}, 2000);
+    }}
+    return;
+  }}
+
   const sendBtn = event.target.closest(".js-send-btn");
   if (sendBtn) {{
     const leadId = sendBtn.dataset.leadId || "";
@@ -164,6 +204,7 @@ document.addEventListener("click", (event) => {{
   if (markBtn) {{
     const leadId = markBtn.dataset.leadId || "";
     markSent(leadId, markBtn);
+    return;
   }}
 }});
 </script>
